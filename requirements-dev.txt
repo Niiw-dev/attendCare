@@ -1,0 +1,6 @@
+# requirements-dev.txt
+-r requirements.txt
+
+npm
+black
+flake8
