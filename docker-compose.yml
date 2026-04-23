@@ -12,6 +12,8 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
 
   backend:
     build:
@@ -19,8 +21,6 @@ services:
       dockerfile: docker/backend/Dockerfile
     container_name: church_backend
     command: sh /app/docker/backend/entrypoint.sh
-    volumes:
-      - ./backend:/app
     ports:
       - "8000:8000"
     depends_on:
