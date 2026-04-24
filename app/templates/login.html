@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login</title>
+    <script src="https://unpkg.com/vue@3"></script>
+</head>
+<body>
+
+<div id="app">
+    <h2>Login</h2>
+
+    <form @submit.prevent="login">
+        <input v-model="username" placeholder="Usuario">
+        <input type="password" v-model="password" placeholder="Contraseña">
+
+        <button>Ingresar</button>
+    </form>
+
+    <p>{{ error }}</p>
+</div>
+
+<script>
+const { createApp } = Vue
+
+createApp({
+    data() {
+        return {
+            username: '',
+            password: '',
+            error: ''
+        }
+    },
+    methods: {
+        async login() {
+            const res = await fetch('/api/auth/login/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username: this.username,
+                    password: this.password
+                })
+            })
+
+            if (!res.ok) {
+                this.error = "Credenciales incorrectas"
+                return
+            }
+
+            const data = await res.json()
+
+            localStorage.setItem('access', data.access)
+
+            window.location.href = '/dashboard/'
+        }
+    }
+}).mount('#app')
+</script>
+
+</body>
+</html>

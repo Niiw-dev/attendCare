@@ -10,7 +10,9 @@ COPY requirements-dev.txt .
 RUN pip install --upgrade pip
 RUN pip install -r requirements-dev.txt
 
-COPY . /app
+COPY app /app
+
+COPY docker/backend /app/docker/backend
 
 RUN chmod +x /app/docker/backend/entrypoint.sh
 

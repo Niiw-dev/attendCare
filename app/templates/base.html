@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{% block title %}{% endblock %}</title>
+
+    <script>
+    function checkAuth() {
+        const token = localStorage.getItem('access')
+
+        if (!token) {
+            window.location.href = '/login/'
+        }
+    }
+
+    checkAuth()
+    </script>
+
+</head>
+<body>
+
+{% block content %}{% endblock %}
+
+</body>
+</html>
