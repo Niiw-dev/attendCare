@@ -73,7 +73,7 @@ docker compose up --build
 ## 🌐 Accesos
 
 * Backend: http://localhost:8000
-* Frontend: http://localhost:5173
+* Frontend (templates): http://localhost:8000
 * DB: localhost:5432
 
 ---
@@ -239,6 +239,58 @@ attendCare/
 ---
 
 ✔ No subir a staging o main sin revisión previa
+
+---
+
+## 🧱 Migraciones
+
+Ejecutar dentro del contenedor:
+
+```bash
+docker exec -it church_backend python manage.py migrate
+```
+
+---
+
+## 🔐 Autenticación
+
+El sistema utiliza JWT:
+
+- Login: `/api/auth/login/`
+- Refresh: `/api/auth/refresh/`
+- Usuario actual: `/api/auth/me/`
+
+El token se almacena en `localStorage`.
+
+---
+
+## 👤 Crear usuarios
+
+```bash
+docker exec -it church_backend python manage.py createsuperuser
+```
+
+---
+
+En caso de validar rol en vistas:
+```bash
+if (user.role !== 'PASTOR') {
+    alert("No autorizado")
+    return
+}
+```
+
+En caso de validar rol en clases o funciones:
+```bash
+from rest_framework.permissions import IsAuthenticated
+from users.permissions import IsPastor
+
+class EventoView(APIView):
+    permission_classes = [IsAuthenticated, IsPastor]
+
+    def get(self, request):
+        return Response({"ok": True})
+```
 
 ---
 
