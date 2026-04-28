@@ -3,5 +3,16 @@
 {% block title %}Dashboard{% endblock %}
 
 {% block content %}
-<h1>Bienvenido</h1>
+
+<div id="app">
+    <h1>Bienvenido</h1>
+
+    <p v-show="user.username">
+        [[ user.username ]] - [[ user.role ]]
+    </p>
+
+    <button @click="logout">Cerrar sesión</button>
+</div>
+
+
 {% endblock %}

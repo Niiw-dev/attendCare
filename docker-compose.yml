@@ -37,6 +37,7 @@ services:
     container_name: church_frontend
     volumes:
       - ./docker/frontend:/app
+      - /app/node_modules
     ports:
       - "5173:5173"
     command: npm run dev -- --host

@@ -1,24 +1,79 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
+    <meta charset="UTF-8">
     <title>{% block title %}{% endblock %}</title>
 
-    <script>
-    function checkAuth() {
-        const token = localStorage.getItem('access')
-
-        if (!token) {
-            window.location.href = '/login/'
-        }
-    }
-
-    checkAuth()
-    </script>
-
+    <script src="https://unpkg.com/vue@3"></script>
 </head>
 <body>
 
-{% block content %}{% endblock %}
+    {% block content %}
+    {% endblock %}
 
 </body>
+<script>
+const { createApp } = Vue
+
+createApp({
+    delimiters: ['[[', ']]'],
+    data() {
+        return {
+            user: {}
+        }
+    },
+    methods: {
+        async checkAuth() {
+            const token = localStorage.getItem('access')
+
+            if (!token) {
+                window.location.href = '/login/'
+                return
+            }
+
+            const res = await fetch('/api/auth/me/', {
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                }
+            })
+
+            if (res.status === 401) {
+                const newToken = await this.refreshToken();
+
+                if (!newToken) return
+            }
+            
+            this.user = await res.json()
+        },
+        logout() {
+            localStorage.removeItem('access')
+            localStorage.removeItem('refresh')
+            window.location.href = '/login/'
+        },
+        async refreshToken() {
+            const refresh = localStorage.getItem('refresh')
+
+            const res = await fetch('/api/auth/refresh/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ refresh })
+            })
+
+            if (!res.ok) {
+                localStorage.clear()
+                window.location.href = '/login/'
+                return null
+            }
+
+            const data = await res.json()
+            localStorage.setItem('access', data.access)
+
+            return data.access
+        }
+    },
+    mounted() {
+        this.checkAuth()
+    }
+}).mount('#app')
+</script>
 </html>
