@@ -3,122 +3,177 @@
 <head>
     <meta charset="UTF-8">
     <title>{% block title %}{% endblock %}</title>
+
     <script src="https://unpkg.com/vue@3"></script>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-    {% block content %}{% endblock %}
 
-    {% block vueData %}{% endblock %}
-    {% block vueMethods %}{% endblock %}
+<body class="bg-gray-100">
+
+<div id="app">
+    <nav class="bg-white shadow-md px-6 py-4 flex justify-between items-center">
+        <div class="font-bold text-lg">
+            AttendCare
+        </div>
+
+        <div class="flex gap-4 items-center">
+            <a href="/dashboard/" class="text-gray-700 hover:text-blue-600">
+                Dashboard
+            </a>
+
+            <a v-if="user.role === 'PASTOR'" 
+               href="/usuarios/" 
+               class="text-gray-700 hover:text-blue-600">
+                Usuarios
+            </a>
+        </div>
+
+        <div class="flex items-center gap-4">
+            <span class="text-sm text-gray-600">
+                [[ user.username ]] ([[ user.role ]])
+            </span>
+
+            <button 
+                @click="logout"
+                class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600">
+                Logout
+            </button>
+        </div>
+    </nav>
+
+    <main class="p-6">
+        {% block content %}{% endblock %}
+    </main>
+</div>
+
+{% block vueData %}{% endblock %}
+{% block vueMethods %}{% endblock %}
 
 <script>
-    const { createApp } = Vue
+const { createApp } = Vue
 
-    const baseData = {
-        user: {},
-        ...( typeof pageData !== 'undefined' ? pageData : {} )
-    }
+const baseData = {
+    user: {},
+    error: '',
+    ...( typeof pageData !== 'undefined' ? pageData : {} )
+}
 
-    const baseMethods = {
-        async checkAuth() {
-            const token = localStorage.getItem('access')
-            if (!token) { window.location.href = '/login/'; return }
+const baseMethods = {
 
-            const res = await fetch('/api/auth/me/', {
-                headers: { 'Authorization': 'Bearer ' + token }
-            })
+    async checkAuth() {
+        const token = localStorage.getItem('access')
 
-            if (res.status === 401) {
-                const newToken = await this.refreshToken()
-                if (!newToken) return
-            }
-
-            this.user = await res.json()
-        },
-        logout() {
-            localStorage.removeItem('access')
-            localStorage.removeItem('refresh')
+        if (!token) {
             window.location.href = '/login/'
-        },
-        async refreshToken() {
-            const refresh = localStorage.getItem('refresh')
-            const res = await fetch('/api/auth/refresh/', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ refresh })
-            })
-            if (!res.ok) { localStorage.clear(); window.location.href = '/login/'; return null }
-            const data = await res.json()
-            localStorage.setItem('access', data.access)
-            return data.access
-        },
-        async apiRequest(url, options = {}) {
-            const token = localStorage.getItem('access')
-
-            const config = {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + token
-                },
-                ...options
-            }
-
-            const res = await fetch(url, config)
-
-            let data = {}
-            try {
-                data = await res.json()
-            } catch (e) {}
-
-            if (res.status === 401) {
-                localStorage.clear()
-                window.location.href = '/login/'
-                return null
-            }
-
-            if (res.status === 403) {
-                this.error = "No tienes permisos para esta acción"
-                return null
-            }
-
-            if (!res.ok) {
-                this.error = this.formatErrors(data)
-                return null
-            }
-
-            this.error = ""
-            return data
-        },
-        formatErrors(errors) {
-            let mensajes = []
-
-            for (let campo in errors) {
-                const valor = errors[campo]
-
-                if (Array.isArray(valor)) {
-                    mensajes.push(`${campo}: ${valor.join(', ')}`)
-                } else if (typeof valor === 'string') {
-                    mensajes.push(`${campo}: ${valor}`)
-                } else {
-                    mensajes.push(`${campo}: Error desconocido`)
-                }
-            }
-
-            return mensajes.join('\n')
-        },
-        ...( typeof pageMethods !== 'undefined' ? pageMethods : {} )
-    }
-
-    createApp({
-        delimiters: ['[[', ']]'],
-        data() { return baseData },
-        methods: baseMethods,
-        mounted() {
-            this.checkAuth()
-            if (typeof this.onMounted === 'function') this.onMounted()
+            return
         }
-    }).mount('#app')
-    </script>
+
+        const res = await fetch('/api/auth/me/', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        })
+
+        if (res.status === 401) {
+            const newToken = await this.refreshToken()
+            if (!newToken) return
+        }
+
+        this.user = await res.json()
+    },
+
+    logout() {
+        localStorage.removeItem('access')
+        localStorage.removeItem('refresh')
+        window.location.href = '/login/'
+    },
+
+    async refreshToken() {
+        const refresh = localStorage.getItem('refresh')
+
+        const res = await fetch('/api/auth/refresh/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refresh })
+        })
+
+        if (!res.ok) {
+            localStorage.clear()
+            window.location.href = '/login/'
+            return null
+        }
+
+        const data = await res.json()
+        localStorage.setItem('access', data.access)
+
+        return data.access
+    },
+
+    async apiRequest(url, options = {}) {
+        const token = localStorage.getItem('access')
+
+        const config = {
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            ...options
+        }
+
+        const res = await fetch(url, config)
+
+        let data = {}
+        try { data = await res.json() } catch (e) {}
+
+        if (res.status === 401) {
+            localStorage.clear()
+            window.location.href = '/login/'
+            return null
+        }
+
+        if (res.status === 403) {
+            this.error = "No tienes permisos para esta acción"
+            return null
+        }
+
+        if (!res.ok) {
+            this.error = this.formatErrors(data)
+            return null
+        }
+
+        this.error = ""
+        return data
+    },
+
+    formatErrors(errors) {
+        if (errors.detail) return errors.detail
+
+        let mensajes = []
+
+        for (let campo in errors) {
+            const valor = errors[campo]
+
+            if (Array.isArray(valor)) {
+                mensajes.push(`${campo}: ${valor.join(', ')}`)
+            } else if (typeof valor === 'string') {
+                mensajes.push(`${campo}: ${valor}`)
+            }
+        }
+
+        return mensajes.join('\n')
+    },
+
+    ...( typeof pageMethods !== 'undefined' ? pageMethods : {} )
+}
+
+createApp({
+    delimiters: ['[[', ']]'],
+    data() { return baseData },
+    methods: baseMethods,
+    mounted() {
+        this.checkAuth()
+        if (typeof this.onMounted === 'function') this.onMounted()
+    }
+}).mount('#app')
+</script>
+
 </body>
 </html>
