@@ -1,7 +1,14 @@
+# Entornos
 .env
-venv
-node_modules
-env
+venv/
+env/
+
+# Python
 __pycache__/
-__pycache__
 *.pyc
+
+# OS
+.DS_Store
+
+# Logs
+*.log
