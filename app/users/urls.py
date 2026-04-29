@@ -1,13 +1,14 @@
 from django.urls import path, include
 from .views import *
 from .logoutView import LogoutView
-from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
 
-router = DefaultRouter()
+from rest_framework.routers import SimpleRouter
+
+router = SimpleRouter()
 router.register(r'api/usuarios', UserViewSet)
 
 urlpatterns = [

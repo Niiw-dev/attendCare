@@ -16,9 +16,15 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from .views import no_access_view
+from django.urls import re_path
+from django.shortcuts import redirect
 
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('no-access/', no_access_view),
     path('', include('users.urls')),
+    path('', lambda request: redirect('/dashboard/')),
+    re_path(r'^.*$', lambda request: redirect('/no-access/')),
 ]
