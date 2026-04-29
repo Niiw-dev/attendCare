@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block title %}Usuarios{% endblock %}
+
+{% block content %}
+
+{{ usuarios_json|json_script:"usuarios-data" }}
+
+<div id="app">
+    <p style="color:red">[[ error ]]</p>
+    <div>
+        <h3>Formulario usuario</h3>
+
+        <input v-model="form.username" placeholder="Username">
+        <input v-model="form.email" placeholder="Email">
+        <input type="password" v-model="form.password" placeholder="Password">
+
+        <select v-model="form.role">
+            <option value="PASTOR">Pastor</option>
+            <option value="LIDER">Líder</option>
+        </select>
+
+        <button @click="guardar">
+            [[ form.id ? 'Actualizar' : 'Crear' ]]
+        </button>
+    </div>
+    
+    <h2>Usuarios</h2>
+
+    <select v-model="filtroRol" @change="fetchUsers">
+        <option value="">Todos</option>
+        <option value="PASTOR">Pastor</option>
+        <option value="LIDER">Líder</option>
+    </select>
+
+    <select v-model="filtroEstado" @change="fetchUsers">
+        <option value="">Todos</option>
+        <option value="true">Activos</option>
+        <option value="false">Inactivos</option>
+    </select>
+
+    <table border="1">
+        <tr>
+            <th>Username</th><th>Email</th><th>Rol</th><th>Estado</th><th>Acciones</th>
+        </tr>
+        <tr v-for="u in users" :key="u.id">
+            <td>[[ u.username ]]</td>
+            <td>[[ u.email ]]</td>
+            <td>[[ u.role ]]</td>
+            <td>[[ u.is_active ? 'Activo' : 'Inactivo' ]]</td>
+            <td>
+                <button @click="editar(u)">Editar</button>
+                <button v-if="u.is_active" @click="desactivar(u)">Desactivar</button>
+                <button v-else @click="activar(u)">Activar</button>
+            </td>
+        </tr>
+    </table>
+</div>
+
+{% endblock %}
+
+{% block vue_data %}
+<script>
+    const pageData = {
+        users: JSON.parse(document.getElementById('usuarios-data').textContent),
+        filtroRol: '',
+        filtroEstado: '',
+        form: {
+            id: null,
+            username: '',
+            email: '',
+            role: 'LIDER',
+            password: ''
+        },
+        error: ''
+    }
+</script>
+{% endblock %}
+
+{% block vue_methods %}
+<script>
+    const pageMethods = {
+        async fetchUsers() {
+            let url = '/api/usuarios/?'
+            if (this.filtroRol)    url += `role=${this.filtroRol}&`
+            if (this.filtroEstado) url += `is_active=${this.filtroEstado}`
+
+            const data = await this.apiRequest(url)
+            if (!data) return
+
+            this.users = data
+        },
+        async desactivar(user) {
+            if (!confirm('¿Seguro que deseas desactivar este usuario?')) return
+
+            const data = await this.apiRequest(`/api/usuarios/${user.id}/desactivar/`, {
+                method: 'PATCH'
+            })
+
+            if (!data) return
+
+            await this.fetchUsers()
+        },
+        async activar(user) {
+            if (!confirm('¿Seguro que deseas activar este usuario?')) return
+
+            const data = await this.apiRequest(`/api/usuarios/${user.id}/activar/`, {
+                method: 'PATCH'
+            })
+
+            if (!data) return
+
+            await this.fetchUsers()
+        },
+        editar(user) {
+            this.form = { ...user }
+        },
+        async guardar() {
+            const url = this.form.id
+                ? `/api/usuarios/${this.form.id}/`
+                : '/api/usuarios/'
+
+            const method = this.form.id ? 'PATCH' : 'POST'
+
+            const payload = { ...this.form }
+
+            if (!payload.password) {
+                delete payload.password
+            }
+
+            const data = await this.apiRequest(url, {
+                method,
+                body: JSON.stringify(payload)
+            })
+
+            if (!data) return
+
+            this.form = { id: null, username: '', email: '', role: 'LIDER', password: '' }
+            await this.fetchUsers()
+        }
+    }
+</script>
+{% endblock %}

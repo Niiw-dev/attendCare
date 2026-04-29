@@ -3,46 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <title>{% block title %}{% endblock %}</title>
-
     <script src="https://unpkg.com/vue@3"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body>
+    {% block content %}{% endblock %}
 
-    {% block content %}
-    {% endblock %}
+    {% block vue_data %}{% endblock %}      {# 👈 datos extra del hijo #}
+    {% block vue_methods %}{% endblock %}   {# 👈 métodos extra del hijo #}
 
-</body>
 <script>
-const { createApp } = Vue
+    const { createApp } = Vue
 
-createApp({
-    delimiters: ['[[', ']]'],
-    data() {
-        return {
-            user: {}
-        }
-    },
-    methods: {
+    // Datos y métodos base (auth global)
+    const baseData = {
+        user: {},
+        ...( typeof pageData !== 'undefined' ? pageData : {} )  // 👈 mezcla datos del hijo
+    }
+
+    const baseMethods = {
         async checkAuth() {
             const token = localStorage.getItem('access')
-
-            if (!token) {
-                window.location.href = '/login/'
-                return
-            }
+            if (!token) { window.location.href = '/login/'; return }
 
             const res = await fetch('/api/auth/me/', {
-                headers: {
-                    'Authorization': 'Bearer ' + token
-                }
+                headers: { 'Authorization': 'Bearer ' + token }
             })
 
             if (res.status === 401) {
-                const newToken = await this.refreshToken();
-
+                const newToken = await this.refreshToken()
                 if (!newToken) return
             }
-            
+
             this.user = await res.json()
         },
         logout() {
@@ -52,28 +44,82 @@ createApp({
         },
         async refreshToken() {
             const refresh = localStorage.getItem('refresh')
-
             const res = await fetch('/api/auth/refresh/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ refresh })
             })
+            if (!res.ok) { localStorage.clear(); window.location.href = '/login/'; return null }
+            const data = await res.json()
+            localStorage.setItem('access', data.access)
+            return data.access
+        },
+        async apiRequest(url, options = {}) {
+            const token = localStorage.getItem('access')
 
-            if (!res.ok) {
+            const config = {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                ...options
+            }
+
+            const res = await fetch(url, config)
+
+            let data = {}
+            try {
+                data = await res.json()
+            } catch (e) {}
+
+            if (res.status === 401) {
                 localStorage.clear()
                 window.location.href = '/login/'
                 return null
             }
 
-            const data = await res.json()
-            localStorage.setItem('access', data.access)
+            if (res.status === 403) {
+                this.error = "No tienes permisos para esta acción"
+                return null
+            }
 
-            return data.access
-        }
-    },
-    mounted() {
-        this.checkAuth()
+            if (!res.ok) {
+                this.error = this.formatErrors(data)
+                return null
+            }
+
+            this.error = ""
+            return data
+        },
+        formatErrors(errors) {
+            let mensajes = []
+
+            for (let campo in errors) {
+                const valor = errors[campo]
+
+                if (Array.isArray(valor)) {
+                    mensajes.push(`${campo}: ${valor.join(', ')}`)
+                } else if (typeof valor === 'string') {
+                    mensajes.push(`${campo}: ${valor}`)
+                } else {
+                    mensajes.push(`${campo}: Error desconocido`)
+                }
+            }
+
+            return mensajes.join('\n')
+        },
+        ...( typeof pageMethods !== 'undefined' ? pageMethods : {} )
     }
-}).mount('#app')
-</script>
+
+    createApp({
+        delimiters: ['[[', ']]'],
+        data() { return baseData },
+        methods: baseMethods,
+        mounted() {
+            this.checkAuth()
+            if (typeof this.onMounted === 'function') this.onMounted()  // 👈 hook del hijo
+        }
+    }).mount('#app')
+    </script>
+</body>
 </html>
