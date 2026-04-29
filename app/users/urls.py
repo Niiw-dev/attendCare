@@ -12,9 +12,9 @@ router.register(r'api/usuarios', UserViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
-    path('login/', login_view),
-    path('usuarios/', usuarios_view),
-    path('dashboard/', dashboard_view),
+    path('login/', loginView),
+    path('usuarios/', usuariosView),
+    path('dashboard/', dashboardView),
 
     path('api/auth/login/', TokenObtainPairView.as_view()),
     path('api/auth/refresh/', TokenRefreshView.as_view()),

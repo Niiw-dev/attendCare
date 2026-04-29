@@ -3,7 +3,7 @@
 
 {% block content %}
 
-{{ usuarios_json|json_script:"usuarios-data" }}
+{{ usuariosJson|json_script:"usuariosData" }}
 
 <div id="app">
     <p style="color:red">[[ error ]]</p>
@@ -58,10 +58,10 @@
 
 {% endblock %}
 
-{% block vue_data %}
+{% block vueData %}
 <script>
     const pageData = {
-        users: JSON.parse(document.getElementById('usuarios-data').textContent),
+        users: JSON.parse(document.getElementById('usuariosData').textContent),
         filtroRol: '',
         filtroEstado: '',
         form: {
@@ -76,7 +76,7 @@
 </script>
 {% endblock %}
 
-{% block vue_methods %}
+{% block vueMethods %}
 <script>
     const pageMethods = {
         async fetchUsers() {

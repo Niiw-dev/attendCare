@@ -96,8 +96,8 @@ docker compose up --build
 * Variables:
 
   ```python
-  nombre_servidor
-  fecha_evento
+  nombreServidor
+  fechaEvento
   ```
 
 * Clases:
@@ -110,7 +110,7 @@ docker compose up --build
 * Funciones:
 
   ```python
-  def registrar_asistencia():
+  def registrarAsistencia():
   ```
 
 ---
@@ -211,7 +211,6 @@ attendCare/
 ├── app/                  # Django
 ├── docker/
 │   ├── backend/
-│   └── frontend/
 ├── docker-compose.yml
 ├── requirements.txt
 ├── requirements-dev.txt
@@ -226,8 +225,12 @@ attendCare/
 ❌ No subir:
 
 * .env
-* node_modules
-* venv
+* venv/
+* env/
+* _pycache__/
+* *.pyc
+* .DS_Store
+* *.log
 
 ---
 
@@ -238,7 +241,7 @@ attendCare/
 
 ---
 
-✔ No subir a staging o main sin revisión previa
+✔ No subir a staging sin autorización o main sin revisión previa
 
 ---
 

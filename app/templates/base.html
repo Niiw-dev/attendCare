@@ -9,16 +9,15 @@
 <body>
     {% block content %}{% endblock %}
 
-    {% block vue_data %}{% endblock %}      {# 👈 datos extra del hijo #}
-    {% block vue_methods %}{% endblock %}   {# 👈 métodos extra del hijo #}
+    {% block vueData %}{% endblock %}
+    {% block vueMethods %}{% endblock %}
 
 <script>
     const { createApp } = Vue
 
-    // Datos y métodos base (auth global)
     const baseData = {
         user: {},
-        ...( typeof pageData !== 'undefined' ? pageData : {} )  // 👈 mezcla datos del hijo
+        ...( typeof pageData !== 'undefined' ? pageData : {} )
     }
 
     const baseMethods = {
@@ -117,7 +116,7 @@
         methods: baseMethods,
         mounted() {
             this.checkAuth()
-            if (typeof this.onMounted === 'function') this.onMounted()  // 👈 hook del hijo
+            if (typeof this.onMounted === 'function') this.onMounted()
         }
     }).mount('#app')
     </script>

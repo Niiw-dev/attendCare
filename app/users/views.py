@@ -1,11 +1,9 @@
-import json
-
 from django.shortcuts import render
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
-from rest_framework import viewsets, status
+from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -15,7 +13,7 @@ from .serializers import UserSerializer
 from .permissions import IsPastor
 
 
-def usuarios_view(request):
+def usuariosView(request):
     role = request.GET.get('role')
     is_active = request.GET.get('is_active')
 
@@ -26,18 +24,18 @@ def usuarios_view(request):
     if is_active is not None:
         qs = qs.filter(is_active=is_active == 'true')
 
-    usuarios_data = list(qs.values('id', 'username', 'email', 'role', 'is_active'))
+    usuariosData = list(qs.values('id', 'username', 'email', 'role', 'is_active'))
 
     return render(request, 'pastor/usuarios.html', {
-        'usuarios_json': usuarios_data
+        'usuariosJson': usuariosData
     })
 
 
-def login_view(request):
+def loginView(request):
     return render(request, 'login.html')
 
 
-def dashboard_view(request):
+def dashboardView(request):
     return render(request, 'dashboard.html')
 
 
@@ -58,7 +56,7 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated, IsPastor]
 
-    def get_queryset(self):
+    def getQueryset(self):
         role = self.request.query_params.get('role')
         is_active = self.request.query_params.get('is_active')
 

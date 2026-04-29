@@ -8,8 +8,8 @@ class LogoutView(APIView):
 
     def post(self, request):
         try:
-            refresh_token = request.data["refresh"]
-            token = RefreshToken(refresh_token)
+            refreshToken = request.data["refresh"]
+            token = RefreshToken(refreshToken)
             token.blacklist()
 
             return Response({"message": "Logout exitoso"})

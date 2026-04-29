@@ -8,7 +8,7 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ['id', 'username', 'email', 'role', 'is_active', 'password']
 
-    def validate_email(self, value):
+    def validateEmail(self, value):
         qs = User.objects.filter(email=value)
         if self.instance:
             qs = qs.exclude(id=self.instance.id)
@@ -16,7 +16,7 @@ class UserSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Email ya existe")
         return value
 
-    def validate_username(self, value):
+    def validateUsername(self, value):
         qs = User.objects.filter(username=value)
         if self.instance:
             qs = qs.exclude(id=self.instance.id)
