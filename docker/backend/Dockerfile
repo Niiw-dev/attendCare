@@ -1,19 +1,35 @@
-FROM python:3.11
+FROM python:3.11-slim
 
-WORKDIR /app
+WORKDIR /app/app
 
-RUN apt-get update && apt-get install -y netcat-openbsd
+# Argumento para entorno
+ARG ENV=prod
 
-COPY requirements.txt .
-COPY requirements-dev.txt .
+# Variables recomendadas para Python
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
-RUN pip install --upgrade pip
-RUN pip install -r requirements-dev.txt
+# Dependencias del sistema
+RUN apt-get update && apt-get install -y netcat-openbsd \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
+# Copiar dependencias primero (cache eficiente)
+COPY requirements.txt requirements-dev.txt ./
+
+# Instalar dependencias
+RUN pip install --upgrade pip && \
+    if [ "$ENV" = "dev" ]; then \
+        pip install --no-cache-dir -r requirements-dev.txt; \
+    else \
+        pip install --no-cache-dir -r requirements.txt; \
+    fi
+
+# Copiar proyecto
 COPY app /app
-
 COPY docker/backend /app/docker/backend
 
+# Permisos
 RUN chmod +x /app/docker/backend/entrypoint.sh
 
+# Comando
 CMD ["sh", "/app/docker/backend/entrypoint.sh"]

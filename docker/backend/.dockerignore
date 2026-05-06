@@ -1,0 +1,34 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual envs
+venv/
+env/
+
+# Logs
+*.log
+
+# Env files
+.env
+
+# Node (si tienes frontend)
+node_modules/
+
+# Tests / dev
+tests/
+.coverage
+.pytest_cache/
+
+# IDEs
+.vscode/
+.idea/
+
+# OS
+.DS_Store
