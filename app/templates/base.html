@@ -26,6 +26,9 @@
                class="text-gray-700 hover:text-blue-600">
                 Usuarios
             </a>
+
+            <a href="/ministries/"
+                class="text-gray-700 hover:text-blue-600">Ministerios</a>
         </div>
 
         <div class="flex items-center gap-4">
@@ -48,6 +51,7 @@
 
 {% block vueData %}{% endblock %}
 {% block vueMethods %}{% endblock %}
+{% block vueComputed %}{% endblock %}
 
 <script>
 const { createApp } = Vue
@@ -164,10 +168,18 @@ const baseMethods = {
     ...( typeof pageMethods !== 'undefined' ? pageMethods : {} )
 }
 
+const baseComputed = {
+    ...( typeof pageComputed !== 'undefined'
+        ? pageComputed
+        : {}
+    )
+}
+
 createApp({
     delimiters: ['[[', ']]'],
     data() { return baseData },
     methods: baseMethods,
+    computed: baseComputed,
     mounted() {
         this.checkAuth()
         if (typeof this.onMounted === 'function') this.onMounted()
