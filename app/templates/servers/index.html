@@ -1,0 +1,505 @@
+{% extends "base.html" %}
+
+{% block title %}
+Servidores
+{% endblock %}
+
+{% block content %}
+
+{{ serversJson|json_script:"servers-data" }}
+
+<div>
+
+    <h1>Servidores</h1>
+
+    <p v-if="error">
+        [[ error ]]
+    </p>
+
+    <!-- FILTERS -->
+    <div>
+
+        <select
+            v-model="ministryFilter"
+            @change="fetchServers"
+        >
+            <option value="">
+                Todos los ministerios
+            </option>
+
+            <option
+                v-for="ministry in ministries"
+                :key="ministry.id"
+                :value="ministry.id"
+            >
+                [[ ministry.name ]]
+            </option>
+
+        </select>
+
+        <select
+            v-model="isActiveFilter"
+            @change="fetchServers"
+        >
+            <option value="">
+                Todos
+            </option>
+
+            <option value="true">
+                Activos
+            </option>
+
+            <option value="false">
+                Inactivos
+            </option>
+
+        </select>
+
+    </div>
+
+    <hr>
+
+    <!-- FORM -->
+    <div>
+
+        <h2>
+            [[ form.id ? 'Editar servidor' : 'Crear servidor' ]]
+        </h2>
+
+        <div>
+
+            <label>
+                Nombre
+            </label>
+
+            <input
+                type="text"
+                v-model="form.firstName"
+            >
+
+        </div>
+
+        <div>
+
+            <label>
+                Apellido
+            </label>
+
+            <input
+                type="text"
+                v-model="form.lastName"
+            >
+
+        </div>
+
+        <div>
+
+            <label>
+                Documento
+            </label>
+
+            <input
+                type="text"
+                v-model="form.document"
+            >
+
+        </div>
+
+        <div>
+
+            <label>
+                PIN
+            </label>
+
+            <input
+                type="password"
+                v-model="form.pin"
+            >
+
+        </div>
+
+        <div>
+
+            <label>
+                Huella
+            </label>
+
+            <input
+                type="text"
+                v-model="form.fingerprint"
+            >
+
+        </div>
+
+        <div>
+
+            <label>
+                Ministerios
+            </label>
+
+            <select
+                id="ministriesSelect"
+                multiple
+            >
+
+                <option
+                    v-for="ministry in activeMinistries"
+                    :key="ministry.id"
+                    :value="ministry.id"
+                >
+                    [[ ministry.name ]]
+                </option>
+
+            </select>
+
+        </div>
+
+        <br>
+
+        <button @click="saveServer">
+            [[ form.id ? 'Actualizar' : 'Crear' ]]
+        </button>
+
+        <button
+            v-if="form.id"
+            @click="resetForm"
+        >
+            Cancelar
+        </button>
+
+    </div>
+
+    <hr>
+
+    <!-- TABLE -->
+    <table border="1">
+
+        <thead>
+
+            <tr>
+
+                <th>
+                    Nombre
+                </th>
+
+                <th>
+                    Documento
+                </th>
+
+                <th>
+                    Estado
+                </th>
+
+                <th>
+                    Ministerios
+                </th>
+
+                <th>
+                    Acciones
+                </th>
+
+            </tr>
+
+        </thead>
+
+        <tbody>
+
+            <tr
+                v-for="server in servers"
+                :key="server.id"
+            >
+
+                <td>
+                    [[ server.firstName ]] [[ server.lastName ]]
+                </td>
+
+                <td>
+                    [[ server.document ]]
+                </td>
+
+                <td>
+                    [[ server.isActive ? 'Activo' : 'Inactivo' ]]
+                </td>
+
+                <td>
+
+                    <span
+                        v-for="ministry in server.ministries"
+                        :key="ministry.id"
+                    >
+                        [[ ministry.name ]],
+                    </span>
+
+                </td>
+
+                <td>
+
+                    <button
+                        @click="editServer(server)"
+                    >
+                        Editar
+                    </button>
+
+                    <button
+                        v-if="server.isActive"
+                        @click="deactivateServer(server)"
+                    >
+                        Desactivar
+                    </button>
+
+                    <button
+                        v-else
+                        @click="activateServer(server)"
+                    >
+                        Activar
+                    </button>
+
+                </td>
+
+            </tr>
+
+        </tbody>
+
+    </table>
+
+</div>
+
+<!-- SELECT2 -->
+<link
+    href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css"
+    rel="stylesheet"
+/>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+{% endblock %}
+
+{% block vueData %}
+<script>
+
+const pageData = {
+
+    servers: JSON.parse(
+        document.getElementById('servers-data').textContent
+    ),
+
+    ministries: [],
+
+    ministryFilter: '',
+
+    isActiveFilter: '',
+
+    form: {
+        id: null,
+        firstName: '',
+        lastName: '',
+        document: '',
+        pin: '',
+        fingerprint: '',
+        ministryIds: []
+    }
+}
+
+</script>
+{% endblock %}
+
+{% block vueMethods %}
+<script>
+
+const pageMethods = {
+
+    async fetchServers() {
+
+        let url = '/api/servers/?'
+
+        if (this.ministryFilter) {
+            url += `ministry=${this.ministryFilter}&`
+        }
+
+        if (this.isActiveFilter) {
+            url += `isActive=${this.isActiveFilter}`
+        }
+
+        const data = await this.apiRequest(url)
+
+        if (!data) return
+
+        this.servers = data
+    },
+
+    async fetchMinistries() {
+
+        const data = await this.apiRequest(
+            '/api/ministries/?isActive=true'
+        )
+
+        if (!data) return
+
+        this.ministries = data
+
+        this.$nextTick(() => {
+            this.initializeSelect2()
+        })
+    },
+
+    initializeSelect2() {
+
+        const vm = this
+
+        $('#ministriesSelect')
+            .select2({
+                placeholder: 'Selecciona ministerios',
+                width: '100%'
+            })
+            .on('change', function () {
+                vm.form.ministryIds = $(this).val()
+                    ? $(this).val().map(Number)
+                    : []
+            })
+
+        $('#ministriesSelect')
+            .val(this.form.ministryIds)
+            .trigger('change')
+    },
+
+    editServer(server) {
+
+        this.form = {
+            id: server.id,
+            firstName: server.firstName,
+            lastName: server.lastName,
+            document: server.document,
+            pin: '',
+            fingerprint: '',
+            ministryIds: server.ministries.map(ministry => ministry.id)
+        }
+
+        this.$nextTick(() => {
+            $('#ministriesSelect')
+                .val(this.form.ministryIds)
+                .trigger('change')
+        })
+    },
+
+    resetForm() {
+
+        this.form = {
+            id: null,
+            firstName: '',
+            lastName: '',
+            document: '',
+            pin: '',
+            fingerprint: '',
+            ministryIds: []
+        }
+
+        this.$nextTick(() => {
+            $('#ministriesSelect')
+                .val([])
+                .trigger('change')
+        })
+    },
+
+    async saveServer() {
+
+        const url = this.form.id
+            ? `/api/servers/${this.form.id}/`
+            : '/api/servers/'
+
+        const method = this.form.id
+            ? 'PATCH'
+            : 'POST'
+
+        const payload = {
+            ...this.form
+        }
+
+        const data = await this.apiRequest(
+            url,
+            {
+                method,
+                body: JSON.stringify(payload)
+            }
+        )
+
+        if (!data) return
+
+        this.resetForm()
+
+        await this.fetchServers()
+    },
+
+
+    async deactivateServer(server) {
+
+        if (!confirm('¿Deseas desactivar este servidor?')) {
+            return
+        }
+
+        const data = await this.apiRequest(
+            `/api/servers/${server.id}/deactivate/`,
+            {
+                method: 'PATCH'
+            }
+        )
+
+        if (!data) return
+
+        await this.fetchServers()
+    },
+
+    async activateServer(server) {
+
+        if (!confirm('¿Deseas activar este servidor?')) {
+            return
+        }
+
+        const data = await this.apiRequest(
+            `/api/servers/${server.id}/activate/`,
+            {
+                method: 'PATCH'
+            }
+        )
+
+        if (!data) return
+
+        await this.fetchServers()
+    },
+
+    async onMounted() {
+
+        await this.fetchMinistries()
+    }
+}
+
+</script>
+{% endblock %}
+
+{% block vueComputed %}
+<script>
+
+const pageComputed = {
+
+    activeServers() {
+        return this.servers.filter(
+            server => server.isActive
+        ).length
+    },
+
+    inactiveServers() {
+        return this.servers.filter(
+            server => !server.isActive
+        ).length
+    },
+
+    activeMinistries() {
+        return this.ministries.filter(
+            ministry => ministry.isActive
+        )
+    }
+}
+
+</script>
+{% endblock %}
