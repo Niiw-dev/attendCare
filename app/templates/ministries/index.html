@@ -35,42 +35,30 @@ Ministerios
 </h2>
 
 <div>
-
     <label>
         Nombre
     </label>
 
     <br>
 
-    <input
-        v-model="form.name"
-        type="text"
-        placeholder="Nombre"
-    >
-
+    <input v-model="form.name" type="text" placeholder="Nombre">
 </div>
 
 <br>
 
 <div>
-
     <label>
         Descripción
     </label>
 
     <br>
 
-    <textarea
-        v-model="form.description"
-        placeholder="Descripción"
-    ></textarea>
-
+    <textarea v-model="form.description" placeholder="Descripción"></textarea>
 </div>
 
 <br>
 
 <div>
-
     <label>
         Líder asignado
     </label>
@@ -78,21 +66,14 @@ Ministerios
     <br>
 
     <select v-model="form.leaderAssigned">
-
         <option :value="null">
             Sin líder
         </option>
 
-        <option
-            v-for="leader in leaders"
-            :key="leader.id"
-            :value="leader.id"
-        >
+        <option v-for="leader in leaders" :key="leader.id" :value="leader.id">
             [[ leader.username ]]
         </option>
-
     </select>
-
 </div>
 
 <br>
@@ -101,10 +82,7 @@ Ministerios
     [[ form.id ? 'Actualizar' : 'Crear' ]]
 </button>
 
-<button
-    v-if="form.id"
-    @click="resetForm"
->
+<button v-if="form.id" @click="resetForm">
     Cancelar
 </button>
 
@@ -114,11 +92,7 @@ Ministerios
     Filtros
 </h2>
 
-<select
-    v-model="isActiveFilter"
-    @change="fetchMinistries"
->
-
+<select v-model="isActiveFilter" @change="fetchMinistries">
     <option value="">
         Todos
     </option>
@@ -130,98 +104,48 @@ Ministerios
     <option value="false">
         Inactivos
     </option>
-
 </select>
 
 <hr>
 
 <table border="1" cellpadding="10">
-
     <thead>
-
         <tr>
-
-            <th>
-                Nombre
-            </th>
-
-            <th>
-                Descripción
-            </th>
-
-            <th>
-                Líder
-            </th>
-
-            <th>
-                Estado
-            </th>
-
-            <th>
-                Acciones
-            </th>
-
+            <th>Nombre</th>
+            <th>Descripción</th>
+            <th>Líder</th>
+            <th>Estado</th>
+            <th>Acciones</th>
         </tr>
-
     </thead>
 
     <tbody>
-
-        <tr
-            v-for="ministry in ministries"
-            :key="ministry.id"
-        >
-
+        <tr v-for="ministry in ministries" :key="ministry.id">
+            <td>[[ ministry.name ]]</td>
+            <td>[[ ministry.description || 'Sin descripción' ]]</td>
+            <td>[[ ministry.leaderName || 'Sin líder' ]]</td>
+            <td>[[ ministry.isActive ? 'Activo' : 'Inactivo' ]]</td>
             <td>
-                [[ ministry.name ]]
-            </td>
-
-            <td>
-                [[ ministry.description || 'Sin descripción' ]]
-            </td>
-
-            <td>
-                [[ ministry.leaderName || 'Sin líder' ]]
-            </td>
-
-            <td>
-                [[ ministry.isActive ? 'Activo' : 'Inactivo' ]]
-            </td>
-
-            <td>
-
                 <button @click="editMinistry(ministry)">
                     Editar
                 </button>
 
-                <button
-                    v-if="ministry.isActive"
-                    @click="deactivateMinistry(ministry)"
-                >
+                <button v-if="ministry.isActive" @click="deactivateMinistry(ministry)">
                     Desactivar
                 </button>
 
-                <button
-                    v-else
-                    @click="activateMinistry(ministry)"
-                >
+                <button v-else @click="activateMinistry(ministry)">
                     Activar
                 </button>
-
             </td>
-
         </tr>
 
         <tr v-if="ministries.length === 0">
-
             <td colspan="5">
                 No hay ministerios registrados
             </td>
-
         </tr>
-
     </tbody>
-
 </table>
 
 {% endblock %}
@@ -230,22 +154,15 @@ Ministerios
 <script>
 
 const pageData = {
-
-    ministries: JSON.parse(
-        document.getElementById('ministries-data').textContent
-    ),
-
+    ministries: JSON.parse(document.getElementById('ministries-data').textContent),
     leaders: [],
-
     isActiveFilter: '',
-
     form: {
         id: null,
         name: '',
         description: '',
         leaderAssigned: null
     },
-
     error: ''
 }
 
@@ -258,11 +175,9 @@ const pageData = {
 const pageMethods = {
 
     async fetchMinistries() {
-
         let url = '/api/ministries/?'
 
         if (this.isActiveFilter) {
-
             url += `isActive=${this.isActiveFilter}`
         }
 
@@ -274,10 +189,7 @@ const pageMethods = {
     },
 
     async fetchLeaders() {
-
-        const data = await this.apiRequest(
-            '/api/usuarios/?role=LIDER&is_active=true'
-        )
+        const data = await this.apiRequest('/api/usuarios/?role=LIDER&is_active=true')
 
         if (!data) return
 
@@ -285,7 +197,6 @@ const pageMethods = {
     },
 
     editMinistry(ministry) {
-
         this.form = {
             id: ministry.id,
             name: ministry.name,
@@ -295,7 +206,6 @@ const pageMethods = {
     },
 
     resetForm() {
-
         this.form = {
             id: null,
             name: '',
@@ -305,17 +215,11 @@ const pageMethods = {
     },
 
     async saveMinistry() {
+        const url = this.form.id ? `/api/ministries/${this.form.id}/` : '/api/ministries/'
 
-        const url = this.form.id
-            ? `/api/ministries/${this.form.id}/`
-            : '/api/ministries/'
+        const method = this.form.id ? 'PATCH' : 'POST'
 
-        const method = this.form.id
-            ? 'PATCH'
-            : 'POST'
-
-        const data = await this.apiRequest(
-            url,
+        const data = await this.apiRequest(url,
             {
                 method,
                 body: JSON.stringify(this.form)
@@ -335,8 +239,7 @@ const pageMethods = {
             return
         }
 
-        const data = await this.apiRequest(
-            `/api/ministries/${ministry.id}/deactivate/`,
+        const data = await this.apiRequest(`/api/ministries/${ministry.id}/deactivate/`,
             {
                 method: 'PATCH'
             }
@@ -353,8 +256,7 @@ const pageMethods = {
             return
         }
 
-        const data = await this.apiRequest(
-            `/api/ministries/${ministry.id}/activate/`,
+        const data = await this.apiRequest(`/api/ministries/${ministry.id}/activate/`,
             {
                 method: 'PATCH'
             }
@@ -366,7 +268,6 @@ const pageMethods = {
     },
 
     async onMounted() {
-
         await this.fetchLeaders()
     }
 }
@@ -378,16 +279,13 @@ const pageMethods = {
 <script>
 
 const pageComputed = {
-
     activeCount() {
-
         return this.ministries.filter(
             ministry => ministry.isActive
         ).length
     },
 
     inactiveCount() {
-
         return this.ministries.filter(
             ministry => !ministry.isActive
         ).length

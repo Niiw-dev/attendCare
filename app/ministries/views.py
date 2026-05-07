@@ -28,16 +28,15 @@ def ministriesView(request):
     })
 
 
+
 class MinistryViewSet(viewsets.ModelViewSet):
 
     queryset = Ministry.objects.all()
 
     serializer_class = MinistrySerializer
 
-    permission_classes = [
-        IsAuthenticated,
-        IsPastor
-    ]
+    permission_classes = [IsAuthenticated,IsPastor]
+
 
     def get_queryset(self):
 
@@ -46,11 +45,10 @@ class MinistryViewSet(viewsets.ModelViewSet):
         query = Ministry.objects.all()
 
         if isActive is not None:
-            query = query.filter(
-                isActive=isActive == 'true'
-            )
+            query = query.filter(isActive=isActive == 'true')
 
         return query
+
 
     @action(detail=True, methods=['patch'])
     def deactivate(self, request, pk=None):
@@ -64,6 +62,7 @@ class MinistryViewSet(viewsets.ModelViewSet):
         return Response({
             "message": "Ministerio desactivado"
         })
+
 
     @action(detail=True, methods=['patch'])
     def activate(self, request, pk=None):

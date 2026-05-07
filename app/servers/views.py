@@ -25,13 +25,12 @@ def serversView(request):
         )
     )
 
-    return render(
-        request,
-        'servers/index.html',
+    return render(request, 'servers/index.html',
         {
             'serversJson': serversData
         }
     )
+
 
 
 class ServerViewSet(viewsets.ModelViewSet):
@@ -40,76 +39,49 @@ class ServerViewSet(viewsets.ModelViewSet):
 
     serializer_class = ServerSerializer
 
-    permission_classes = [
-        IsAuthenticated,
-        IsPastor
-    ]
+    permission_classes = [IsAuthenticated, IsPastor]
+
 
     def get_queryset(self):
 
-        queryset = Server.objects.prefetch_related(
-            'ministries'
-        )
+        queryset = Server.objects.prefetch_related('ministries')
 
-        ministryId = self.request.query_params.get(
-            'ministryId'
-        )
+        ministryId = self.request.query_params.get('ministryId')
 
-        isActive = self.request.query_params.get(
-            'isActive'
-        )
+        isActive = self.request.query_params.get('isActive')
 
         if ministryId:
 
-            queryset = queryset.filter(
-                ministries__id=ministryId
-            )
+            queryset = queryset.filter(ministries__id=ministryId)
 
         if isActive is not None:
 
-            queryset = queryset.filter(
-                isActive=isActive == 'true'
-            )
+            queryset = queryset.filter(isActive=isActive == 'true')
 
         return queryset
 
-    @action(
-        detail=True,
-        methods=['post']
-    )
+
+    @action(detail=True, methods=['post'])
     def ministries(self, request, pk=None):
 
         server = self.get_object()
 
-        ministryIds = request.data.get(
-            'ministryIds',
-            []
-        )
+        ministryIds = request.data.get('ministryIds', [])
 
-        ServerMinistry.objects.filter(
-            server=server
-        ).delete()
+        ServerMinistry.objects.filter(server=server).delete()
 
-        ministries = Ministry.objects.filter(
-            id__in=ministryIds,
-            isActive=True
-        )
+        ministries = Ministry.objects.filter(id__in=ministryIds, isActive=True)
 
         for ministry in ministries:
 
-            ServerMinistry.objects.create(
-                server=server,
-                ministry=ministry
-            )
+            ServerMinistry.objects.create(server=server, ministry=ministry)
 
         return Response({
             'message': 'Ministerios actualizados'
         })
 
-    @action(
-        detail=True,
-        methods=['patch']
-    )
+
+    @action(detail=True, methods=['patch'])
     def deactivate(self, request, pk=None):
 
         server = self.get_object()
@@ -122,10 +94,8 @@ class ServerViewSet(viewsets.ModelViewSet):
             'message': 'Servidor desactivado'
         })
 
-    @action(
-        detail=True,
-        methods=['patch']
-    )
+
+    @action(detail=True, methods=['patch'])
     def activate(self, request, pk=None):
 
         server = self.get_object()

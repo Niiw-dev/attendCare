@@ -4,8 +4,13 @@
     <meta charset="UTF-8">
     <title>{% block title %}{% endblock %}</title>
 
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" 
+            rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"
+            rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" 
+            rel="stylesheet" />
+
     <script src="https://unpkg.com/vue@3"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
@@ -25,17 +30,18 @@
                 Dashboard
             </a>
 
-            <a v-if="user.role === 'PASTOR'" 
-               href="/usuarios/" 
-               class="text-gray-700 hover:text-blue-600">
+            <a v-if="user.role === 'PASTOR'" href="/usuarios/" 
+                class="text-gray-700 hover:text-blue-600">
                 Usuarios
             </a>
 
-            <a href="/ministries/"
-                class="text-gray-700 hover:text-blue-600">Ministerios</a>
+            <a href="/ministries/" class="text-gray-700 hover:text-blue-600">
+                Ministerios
+            </a>
 
-            <a href="/servers/"
-                class="text-gray-700 hover:text-blue-600">Servidores</a>
+            <a href="/servers/" class="text-gray-700 hover:text-blue-600">
+                Servidores
+            </a>
         </div>
 
         <div class="flex items-center gap-4">
@@ -43,9 +49,8 @@
                 [[ user.username ]] ([[ user.role ]])
             </span>
 
-            <button 
-                @click="logout"
-                class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600">
+            <button @click="logout" 
+                    class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600">
                 Logout
             </button>
         </div>
@@ -193,6 +198,9 @@ createApp({
     }
 }).mount('#app')
 </script>
-
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>
+  lucide.createIcons();
+</script>
 </body>
 </html>

@@ -6,10 +6,7 @@ from .views import *
 
 router = SimpleRouter()
 
-router.register(
-    r'api/ministries',
-    MinistryViewSet
-)
+router.register(r'api/ministries',MinistryViewSet)
 
 urlpatterns = [
     path('ministries/',ministriesView, name='ministries'),

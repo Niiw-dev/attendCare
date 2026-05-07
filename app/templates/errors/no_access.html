@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <title>Acceso restringido</title>
 
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/3.35.0/tabler-icons.min.css"
+            rel="stylesheet" />
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3"></script>
 </head>
@@ -11,9 +14,8 @@
 <body class="min-h-screen bg-gradient-to-br from-indigo-100 via-white to-red-100">
 
 <div id="app" class="min-h-screen grid grid-cols-1 md:grid-cols-2">
-
-    <!-- 🔵 LADO IZQUIERDO (visual) -->
-    <div class="hidden md:flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600 text-white p-10">
+    <div class="hidden md:flex items-center justify-center bg-gradient-to-br from-indigo-500 
+            to-purple-600 text-white p-10">
         <div class="text-center">
             <h1 class="text-6xl font-extrabold mb-4">
                 [[ code ]]
@@ -24,63 +26,46 @@
         </div>
     </div>
 
-    <!-- ⚪ LADO DERECHO (contenido) -->
     <div class="flex items-center justify-center p-6">
-
         <div class="w-full max-w-lg bg-white rounded-3xl shadow-2xl p-10">
-
-            <!-- ICONO -->
             <div class="flex justify-center mb-6">
-                <div class="bg-red-100 text-red-600 rounded-full w-20 h-20 flex items-center justify-center text-4xl shadow">
-                    ⚠️
+                <div class="bg-red-100 text-red-600 rounded-full w-20 h-20 flex items-center 
+                        justify-center shadow">
+                    <i class="ti ti-alert-triangle-filled text-5xl text-yellow-500"></i>
                 </div>
             </div>
 
-            <!-- TITULO -->
             <h1 class="text-3xl font-bold text-center mb-3">
                 [[ title ]]
             </h1>
 
-            <!-- MENSAJE -->
             <p class="text-gray-600 text-center mb-8 leading-relaxed">
                 [[ message ]]
             </p>
 
-            <!-- BOTONES -->
             <div class="flex flex-col gap-4">
-
-                <button 
-                    v-if="isLogged"
-                    @click="goDashboard"
-                    class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-semibold transition shadow">
+                <button v-if="isLogged" @click="goDashboard" class="w-full bg-indigo-600 shadow
+                        hover:bg-indigo-700 text-white py-3 rounded-xl font-semibold transition">
                     Ir al Dashboard
                 </button>
 
-                <button 
-                    v-if="!isLogged"
-                    @click="goLogin"
-                    class="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-xl font-semibold transition shadow">
+                <button v-if="!isLogged" @click="goLogin" class="w-full bg-green-500 shadow
+                        hover:bg-green-600 text-white py-3 rounded-xl font-semibold transition">
                     Iniciar sesión
                 </button>
 
-                <button 
-                    v-if="isLogged"
-                    @click="logout"
-                    class="w-full bg-gray-500 hover:bg-gray-600 text-white py-3 rounded-xl font-semibold transition shadow">
+                <button v-if="isLogged" @click="logout" class="w-full bg-gray-500 shadow
+                        hover:bg-gray-600 text-white py-3 rounded-xl font-semibold transition">
                     Cerrar sesión
                 </button>
 
             </div>
 
-            <!-- EXTRA -->
             <div class="text-center mt-8 text-sm text-gray-400">
                 Código de error: [[ code ]]
             </div>
-
         </div>
-
     </div>
-
 </div>
 
 <script>
@@ -137,6 +122,9 @@ createApp({
     }
 }).mount('#app')
 </script>
-
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>
+  lucide.createIcons();
+</script>
 </body>
 </html>

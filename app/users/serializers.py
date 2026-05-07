@@ -4,26 +4,36 @@ from .models import User
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=False)
 
+
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'role', 'is_active', 'password']
 
+
     def validateEmail(self, value):
         qs = User.objects.filter(email=value)
+        
         if self.instance:
             qs = qs.exclude(id=self.instance.id)
+        
         if qs.exists():
             raise serializers.ValidationError("Email ya existe")
+        
         return value
+
 
     def validateUsername(self, value):
         qs = User.objects.filter(username=value)
+        
         if self.instance:
             qs = qs.exclude(id=self.instance.id)
+        
         if qs.exists():
             raise serializers.ValidationError("Username ya existe")
+        
         return value
-    
+
+
     def create(self, validated_data):
         password = validated_data.pop('password', None)
         user = User(**validated_data)
@@ -32,8 +42,10 @@ class UserSerializer(serializers.ModelSerializer):
             user.set_password(password)
 
         user.save()
+        
         return user
-    
+
+
     def update(self, instance, validated_data):
         password = validated_data.pop('password', None)
 
@@ -46,4 +58,5 @@ class UserSerializer(serializers.ModelSerializer):
             instance.set_password(password)
 
         instance.save()
+        
         return instance

@@ -4,23 +4,12 @@ from .models import Ministry
 
 class MinistrySerializer(serializers.ModelSerializer):
 
-    leaderName = serializers.CharField(
-        source='leaderAssigned.username',
-        read_only=True
-    )
+    leaderName = serializers.CharField(source='leaderAssigned.username',read_only=True)
 
     class Meta:
         model = Ministry
 
-        fields = [
-            'id',
-            'name',
-            'description',
-            'leaderAssigned',
-            'leaderName',
-            'isActive',
-            'createdAt'
-        ]
+        fields = ['id','name','description','leaderAssigned','leaderName','isActive','createdAt']
 
     def validate_name(self, value):
 
@@ -30,8 +19,6 @@ class MinistrySerializer(serializers.ModelSerializer):
             query = query.exclude(id=self.instance.id)
 
         if query.exists():
-            raise serializers.ValidationError(
-                "Ya existe un ministerio con este nombre"
-            )
+            raise serializers.ValidationError("Ya existe un ministerio con este nombre")
 
         return value

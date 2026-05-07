@@ -16,11 +16,12 @@ from .permissions import IsPastor
 def usuariosView(request):
     role = request.GET.get('role')
     is_active = request.GET.get('is_active')
-
+    
     qs = User.objects.all()
 
     if role:
         qs = qs.filter(role=role)
+
     if is_active is not None:
         qs = qs.filter(is_active=is_active == 'true')
 
@@ -51,10 +52,12 @@ def me(request):
     })
 
 
+
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated, IsPastor]
+
 
     def getQueryset(self):
         role = self.request.query_params.get('role')
@@ -70,6 +73,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
         return qs
 
+
     @action(detail=True, methods=['patch'])
     def desactivar(self, request, pk=None):
         user = self.get_object()
@@ -81,7 +85,8 @@ class UserViewSet(viewsets.ModelViewSet):
         user.save()
 
         return Response({"message": "Usuario desactivado"})
-    
+
+
     @action(detail=True, methods=['patch'])
     def activar(self, request, pk=None):
         user = self.get_object()

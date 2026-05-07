@@ -4,7 +4,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 
 class LogoutView(APIView):
+
     permission_classes = [IsAuthenticated]
+
 
     def post(self, request):
         try:
@@ -13,5 +15,6 @@ class LogoutView(APIView):
             token.blacklist()
 
             return Response({"message": "Logout exitoso"})
+        
         except Exception:
             return Response({"error": "Token inválido"}, status=400)
