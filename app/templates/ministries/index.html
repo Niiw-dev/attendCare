@@ -1,0 +1,296 @@
+{% extends "base.html" %}
+
+{% block title %}
+Ministerios
+{% endblock %}
+
+{% block content %}
+
+{{ ministriesJson|json_script:"ministries-data" }}
+
+<h1>Ministerios</h1>
+
+<p>
+    Gestión de ministerios
+</p>
+
+<hr>
+
+<p>
+    Activos: [[ activeCount ]]
+</p>
+
+<p>
+    Inactivos: [[ inactiveCount ]]
+</p>
+
+<hr>
+
+<p v-if="error">
+    [[ error ]]
+</p>
+
+<h2>
+    [[ form.id ? 'Editar ministerio' : 'Crear ministerio' ]]
+</h2>
+
+<div>
+    <label>
+        Nombre
+    </label>
+
+    <br>
+
+    <input v-model="form.name" type="text" placeholder="Nombre">
+</div>
+
+<br>
+
+<div>
+    <label>
+        Descripción
+    </label>
+
+    <br>
+
+    <textarea v-model="form.description" placeholder="Descripción"></textarea>
+</div>
+
+<br>
+
+<div>
+    <label>
+        Líder asignado
+    </label>
+
+    <br>
+
+    <select v-model="form.leaderAssigned">
+        <option :value="null">
+            Sin líder
+        </option>
+
+        <option v-for="leader in leaders" :key="leader.id" :value="leader.id">
+            [[ leader.username ]]
+        </option>
+    </select>
+</div>
+
+<br>
+
+<button @click="saveMinistry">
+    [[ form.id ? 'Actualizar' : 'Crear' ]]
+</button>
+
+<button v-if="form.id" @click="resetForm">
+    Cancelar
+</button>
+
+<hr>
+
+<h2>
+    Filtros
+</h2>
+
+<select v-model="isActiveFilter" @change="fetchMinistries">
+    <option value="">
+        Todos
+    </option>
+
+    <option value="true">
+        Activos
+    </option>
+
+    <option value="false">
+        Inactivos
+    </option>
+</select>
+
+<hr>
+
+<table border="1" cellpadding="10">
+    <thead>
+        <tr>
+            <th>Nombre</th>
+            <th>Descripción</th>
+            <th>Líder</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr v-for="ministry in ministries" :key="ministry.id">
+            <td>[[ ministry.name ]]</td>
+            <td>[[ ministry.description || 'Sin descripción' ]]</td>
+            <td>[[ ministry.leaderName || 'Sin líder' ]]</td>
+            <td>[[ ministry.isActive ? 'Activo' : 'Inactivo' ]]</td>
+            <td>
+                <button @click="editMinistry(ministry)">
+                    Editar
+                </button>
+
+                <button v-if="ministry.isActive" @click="deactivateMinistry(ministry)">
+                    Desactivar
+                </button>
+
+                <button v-else @click="activateMinistry(ministry)">
+                    Activar
+                </button>
+            </td>
+        </tr>
+
+        <tr v-if="ministries.length === 0">
+            <td colspan="5">
+                No hay ministerios registrados
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+{% endblock %}
+
+{% block vueData %}
+<script>
+
+const pageData = {
+    ministries: JSON.parse(document.getElementById('ministries-data').textContent),
+    leaders: [],
+    isActiveFilter: '',
+    form: {
+        id: null,
+        name: '',
+        description: '',
+        leaderAssigned: null
+    },
+    error: ''
+}
+
+</script>
+{% endblock %}
+
+{% block vueMethods %}
+<script>
+
+const pageMethods = {
+
+    async fetchMinistries() {
+        let url = '/api/ministries/?'
+
+        if (this.isActiveFilter) {
+            url += `isActive=${this.isActiveFilter}`
+        }
+
+        const data = await this.apiRequest(url)
+
+        if (!data) return
+
+        this.ministries = data
+    },
+
+    async fetchLeaders() {
+        const data = await this.apiRequest('/api/usuarios/?role=LIDER&is_active=true')
+
+        if (!data) return
+
+        this.leaders = data
+    },
+
+    editMinistry(ministry) {
+        this.form = {
+            id: ministry.id,
+            name: ministry.name,
+            description: ministry.description,
+            leaderAssigned: ministry.leaderAssigned
+        }
+    },
+
+    resetForm() {
+        this.form = {
+            id: null,
+            name: '',
+            description: '',
+            leaderAssigned: null
+        }
+    },
+
+    async saveMinistry() {
+        const url = this.form.id ? `/api/ministries/${this.form.id}/` : '/api/ministries/'
+
+        const method = this.form.id ? 'PATCH' : 'POST'
+
+        const data = await this.apiRequest(url,
+            {
+                method,
+                body: JSON.stringify(this.form)
+            }
+        )
+
+        if (!data) return
+
+        this.resetForm()
+
+        await this.fetchMinistries()
+    },
+
+    async deactivateMinistry(ministry) {
+
+        if (!confirm('¿Deseas desactivar este ministerio?')) {
+            return
+        }
+
+        const data = await this.apiRequest(`/api/ministries/${ministry.id}/deactivate/`,
+            {
+                method: 'PATCH'
+            }
+        )
+
+        if (!data) return
+
+        await this.fetchMinistries()
+    },
+
+    async activateMinistry(ministry) {
+
+        if (!confirm('¿Deseas activar este ministerio?')) {
+            return
+        }
+
+        const data = await this.apiRequest(`/api/ministries/${ministry.id}/activate/`,
+            {
+                method: 'PATCH'
+            }
+        )
+
+        if (!data) return
+
+        await this.fetchMinistries()
+    },
+
+    async onMounted() {
+        await this.fetchLeaders()
+    }
+}
+
+</script>
+{% endblock %}
+
+{% block vueComputed %}
+<script>
+
+const pageComputed = {
+    activeCount() {
+        return this.ministries.filter(
+            ministry => ministry.isActive
+        ).length
+    },
+
+    inactiveCount() {
+        return this.ministries.filter(
+            ministry => !ministry.isActive
+        ).length
+    }
+}
+
+</script>
+{% endblock %}

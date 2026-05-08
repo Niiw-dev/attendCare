@@ -10,8 +10,9 @@
     <h2>Login</h2>
 
     <form @submit.prevent="login">
-        <input v-model="username" placeholder="Usuario">
-        <input type="password" v-model="password" placeholder="Contraseña" autocomplete="current-password">
+        <input type="text" v-model="username" placeholder="Usuario" autocomplete="username">
+        <input type="password" v-model="password" placeholder="Contraseña" 
+                autocomplete="current-password">
 
         <button>Ingresar</button>
     </form>
