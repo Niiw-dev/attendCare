@@ -1,0 +1,199 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Estados de Evento
+{% endblock %}
+
+{% block content %}
+
+<div>
+
+    <h1>
+        Estados de Evento
+    </h1>
+
+    <div>
+
+        <input
+            v-model="form.name"
+            placeholder="Nombre"
+        >
+
+        <input
+            v-model="form.code"
+            placeholder="Código"
+        >
+
+        <button @click="saveStatus">
+            [[ form.id ? 'Actualizar' : 'Guardar' ]]
+        </button>
+
+    </div>
+
+    <table>
+
+        <thead>
+
+            <tr>
+
+                <th>ID</th>
+
+                <th>Nombre</th>
+
+                <th>Código</th>
+
+                <th></th>
+
+            </tr>
+
+        </thead>
+
+        <tbody>
+
+            <tr
+                v-for="status in statuses"
+                :key="status.id"
+            >
+
+                <td>
+                    [[ status.id ]]
+                </td>
+
+                <td>
+                    [[ status.name ]]
+                </td>
+
+                <td>
+                    [[ status.code ]]
+                </td>
+
+                <td>
+
+                    <button
+                        @click="editStatus(status)"
+                    >
+                        Editar
+                    </button>
+
+                    <button
+                        @click="deleteStatus(status.id)"
+                    >
+                        Eliminar
+                    </button>
+
+                </td>
+
+            </tr>
+
+        </tbody>
+
+    </table>
+
+</div>
+
+{% endblock %}
+
+{% block vueData %}
+<script>
+
+const pageData = {
+
+    statuses: [],
+
+    form: {
+        id: null,
+        name: '',
+        code: ''
+    }
+
+}
+
+</script>
+{% endblock %}
+
+{% block vueMethods %}
+<script>
+
+const pageMethods = {
+
+    async onMounted() {
+        await this.loadStatuses()
+    },
+
+    async loadStatuses() {
+
+        const data = await this.apiRequest(
+            '/api/event-statuses/'
+        )
+
+        if (!data) return
+
+        this.statuses = data
+    },
+
+    async saveStatus() {
+
+        let url = '/api/event-statuses/'
+        let method = 'POST'
+
+        if (this.form.id) {
+            url += this.form.id + '/'
+            method = 'PUT'
+        }
+
+        const data = await this.apiRequest(url, {
+            method,
+            body: JSON.stringify(this.form)
+        })
+
+        if (!data) return
+
+        this.resetForm()
+
+        await this.loadStatuses()
+    },
+
+    editStatus(status) {
+
+        this.form = {
+            id: status.id,
+            name: status.name,
+            code: status.code
+        }
+
+    },
+
+    async deleteStatus(id) {
+
+        const confirmed = confirm(
+            '¿Eliminar estado?'
+        )
+
+        if (!confirmed) return
+
+        const data = await this.apiRequest(
+            '/api/event-statuses/' + id + '/',
+            {
+                method: 'DELETE'
+            }
+        )
+
+        if (data === null) return
+
+        await this.loadStatuses()
+    },
+
+    resetForm() {
+
+        this.form = {
+            id: null,
+            name: '',
+            code: ''
+        }
+
+    }
+
+}
+
+</script>
+{% endblock %}

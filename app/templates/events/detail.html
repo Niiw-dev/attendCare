@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+    <div class="card shadow-sm border-0">
+
+        <div class="card-body">
+
+            <div class="d-flex justify-content-between align-items-center mb-4">
+
+                <div>
+
+                    <h2 class="mb-1">
+                        {{ event.name }}
+                    </h2>
+
+                    <small class="text-muted">
+                        {{ event.type.name }}
+                    </small>
+
+                </div>
+
+                <span class="badge bg-primary">
+                    {{ event.status.name }}
+                </span>
+
+            </div>
+
+            <div class="row">
+
+                <div class="col-md-6 mb-3">
+
+                    <h6>
+                        Fecha inicio
+                    </h6>
+
+                    <p>
+                        {{ event.startDate }}
+                    </p>
+
+                </div>
+
+                <div class="col-md-6 mb-3">
+
+                    <h6>
+                        Fecha fin
+                    </h6>
+
+                    <p>
+                        {{ event.endDate }}
+                    </p>
+
+                </div>
+
+                <div class="col-md-6 mb-3">
+
+                    <h6>
+                        Ministerio líder
+                    </h6>
+
+                    <p>
+                        {{ event.leaderMinistry.name }}
+                    </p>
+
+                </div>
+
+                <div class="col-md-6 mb-3">
+
+                    <h6>
+                        Creado por
+                    </h6>
+
+                    <p>
+                        {{ event.createdBy }}
+                    </p>
+
+                </div>
+
+            </div>
+
+            <hr>
+
+            <h5 class="mb-3">
+                Ministerios participantes
+            </h5>
+
+            <div class="row">
+
+                {% for ministry in event.participantMinistries.all %}
+
+                    <div class="col-md-4 mb-2">
+
+                        <div class="border rounded p-3">
+
+                            {{ ministry.name }}
+
+                        </div>
+
+                    </div>
+
+                {% empty %}
+
+                    <p>
+                        No hay ministerios participantes
+                    </p>
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

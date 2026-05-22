@@ -1,0 +1,290 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Eventos Recurrentes
+{% endblock %}
+
+{% block content %}
+
+<div>
+
+    <h1>
+        Eventos Recurrentes
+    </h1>
+
+    <div>
+
+        <input
+            v-model="form.name"
+            placeholder="Nombre"
+        >
+
+        <select v-model="form.weekday">
+
+            <option :value="0">Lunes</option>
+            <option :value="1">Martes</option>
+            <option :value="2">Miércoles</option>
+            <option :value="3">Jueves</option>
+            <option :value="4">Viernes</option>
+            <option :value="5">Sábado</option>
+            <option :value="6">Domingo</option>
+
+        </select>
+
+        <input
+            type="time"
+            v-model="form.startTime"
+        >
+
+        <input
+            type="time"
+            v-model="form.endTime"
+        >
+
+        <select v-model="form.eventType">
+
+            <option
+                v-for="type in eventTypes"
+                :key="type.id"
+                :value="type.id"
+            >
+                [[ type.name ]]
+            </option>
+
+        </select>
+
+        <select v-model="form.status">
+
+            <option
+                v-for="status in statuses"
+                :key="status.id"
+                :value="status.id"
+            >
+                [[ status.name ]]
+            </option>
+
+        </select>
+
+        <button @click="saveRecurring">
+            [[ form.id ? 'Actualizar' : 'Guardar' ]]
+        </button>
+
+    </div>
+
+    <table>
+
+        <thead>
+
+            <tr>
+
+                <th>Nombre</th>
+
+                <th>Día</th>
+
+                <th>Inicio</th>
+
+                <th>Fin</th>
+
+                <th></th>
+
+            </tr>
+
+        </thead>
+
+        <tbody>
+
+            <tr
+                v-for="event in recurringEvents"
+                :key="event.id"
+            >
+
+                <td>
+                    [[ event.name ]]
+                </td>
+
+                <td>
+                    [[ event.weekday ]]
+                </td>
+
+                <td>
+                    [[ event.startTime ]]
+                </td>
+
+                <td>
+                    [[ event.endTime ]]
+                </td>
+
+                <td>
+
+                    <button
+                        @click="editRecurring(event)"
+                    >
+                        Editar
+                    </button>
+
+                    <button
+                        @click="deleteRecurring(event.id)"
+                    >
+                        Eliminar
+                    </button>
+
+                </td>
+
+            </tr>
+
+        </tbody>
+
+    </table>
+
+</div>
+
+{% endblock %}
+
+{% block vueData %}
+<script>
+
+const pageData = {
+
+    recurringEvents: [],
+
+    eventTypes: [],
+
+    statuses: [],
+
+    form: {
+        id: null,
+        name: '',
+        weekday: 0,
+        startTime: '',
+        endTime: '',
+        eventType: null,
+        status: null
+    }
+
+}
+
+</script>
+{% endblock %}
+
+{% block vueMethods %}
+<script>
+
+const pageMethods = {
+
+    async onMounted() {
+
+        await Promise.all([
+            this.loadRecurring(),
+            this.loadEventTypes(),
+            this.loadStatuses()
+        ])
+
+    },
+
+    async loadRecurring() {
+
+        const data = await this.apiRequest(
+            '/api/recurring-events/'
+        )
+
+        if (!data) return
+
+        this.recurringEvents = data
+    },
+
+    async loadEventTypes() {
+
+        const data = await this.apiRequest(
+            '/api/event-types/'
+        )
+
+        if (!data) return
+
+        this.eventTypes = data
+    },
+
+    async loadStatuses() {
+
+        const data = await this.apiRequest(
+            '/api/event-statuses/'
+        )
+
+        if (!data) return
+
+        this.statuses = data
+    },
+
+    async saveRecurring() {
+
+        let url = '/api/recurring-events/'
+        let method = 'POST'
+
+        if (this.form.id) {
+            url += this.form.id + '/'
+            method = 'PUT'
+        }
+
+        const data = await this.apiRequest(url, {
+            method,
+            body: JSON.stringify(this.form)
+        })
+
+        if (!data) return
+
+        this.resetForm()
+
+        await this.loadRecurring()
+    },
+
+    editRecurring(event) {
+
+        this.form = {
+            id: event.id,
+            name: event.name,
+            weekday: event.weekday,
+            startTime: event.startTime,
+            endTime: event.endTime,
+            eventType: event.eventType,
+            status: event.status
+        }
+
+    },
+
+    async deleteRecurring(id) {
+
+        const confirmed = confirm(
+            '¿Eliminar evento recurrente?'
+        )
+
+        if (!confirmed) return
+
+        const data = await this.apiRequest(
+            '/api/recurring-events/' + id + '/',
+            {
+                method: 'DELETE'
+            }
+        )
+
+        if (data === null) return
+
+        await this.loadRecurring()
+    },
+
+    resetForm() {
+
+        this.form = {
+            id: null,
+            name: '',
+            weekday: 0,
+            startTime: '',
+            endTime: '',
+            eventType: null,
+            status: null
+        }
+
+    }
+
+}
+
+</script>
+{% endblock %}

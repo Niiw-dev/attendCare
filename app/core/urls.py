@@ -27,6 +27,7 @@ urlpatterns = [
     path('', include('users.urls')),
     path('', include('ministries.urls')),
     path('', include('servers.urls')),
+    path('', include('events.urls')),
     path('', lambda request: redirect('/dashboard/')),
     re_path(r'^.*$', lambda request: redirect('/no-access/')),
 ]

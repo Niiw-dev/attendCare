@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Eventos</h2>
+
+        <a
+            href="{% url 'eventCreateView' %}"
+            class="btn btn-primary"
+        >
+            Crear evento
+        </a>
+    </div>
+
+    <form method="GET" class="row g-3 mb-4">
+
+        <div class="col-md-3">
+            <label class="form-label">
+                Tipo
+            </label>
+
+            <select
+                name="type"
+                class="form-select"
+            >
+                <option value="">
+                    Todos
+                </option>
+
+                {% for type in eventTypes %}
+                    <option
+                        value="{{ type.id }}"
+                        {% if request.GET.type == type.id|stringformat:"s" %}
+                            selected
+                        {% endif %}
+                    >
+                        {{ type.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label">
+                Estado
+            </label>
+
+            <select
+                name="status"
+                class="form-select"
+            >
+                <option value="">
+                    Todos
+                </option>
+
+                {% for status in eventStatuses %}
+                    <option
+                        value="{{ status.id }}"
+                        {% if request.GET.status == status.id|stringformat:"s" %}
+                            selected
+                        {% endif %}
+                    >
+                        {{ status.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label">
+                Fecha inicio
+            </label>
+
+            <input
+                type="date"
+                name="startDate"
+                value="{{ request.GET.startDate }}"
+                class="form-control"
+            >
+        </div>
+
+        <div class="col-md-3 d-flex align-items-end">
+            <button class="btn btn-dark w-100">
+                Filtrar
+            </button>
+        </div>
+
+    </form>
+
+    <div class="card shadow-sm border-0">
+
+        <div class="table-responsive">
+
+            <table class="table table-hover align-middle mb-0">
+
+                <thead class="table-light">
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Tipo</th>
+                        <th>Estado</th>
+                        <th>Fecha inicio</th>
+                        <th>Fecha fin</th>
+                        <th>Ministerio líder</th>
+                        <th></th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for event in events %}
+
+                        <tr>
+
+                            <td>
+                                {{ event.name }}
+                            </td>
+
+                            <td>
+                                {{ event.type.name }}
+                            </td>
+
+                            <td>
+                                {{ event.status.name }}
+                            </td>
+
+                            <td>
+                                {{ event.startDate }}
+                            </td>
+
+                            <td>
+                                {{ event.endDate }}
+                            </td>
+
+                            <td>
+                                {{ event.leaderMinistry.name }}
+                            </td>
+
+                            <td>
+
+                                <a
+                                    href="{% url 'eventDetailView' event.id %}"
+                                    class="btn btn-sm btn-outline-primary"
+                                >
+                                    Ver
+                                </a>
+
+                            </td>
+
+                        </tr>
+
+                    {% empty %}
+
+                        <tr>
+                            <td colspan="7" class="text-center py-4">
+                                No hay eventos
+                            </td>
+                        </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Tipos de Evento
+{% endblock %}
+
+{% block content %}
+
+<div>
+
+    <h1>
+        Tipos de Evento
+    </h1>
+
+    <div>
+        <input v-model="form.name" placeholder="Nombre">
+
+        <button @click="saveType">
+            [[ form.id ? 'Actualizar' : 'Guardar' ]]
+        </button>
+    </div>
+
+    <table>
+
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th></th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+            <tr v-for="type in types" :key="type.id">
+
+                <td>
+                    [[ type.id ]]
+                </td>
+
+                <td>
+                    [[ type.name ]]
+                </td>
+
+                <td>
+
+                    <button @click="editType(type)">
+                        Editar
+                    </button>
+
+                    <button @click="deleteType(type.id)">
+                        Eliminar
+                    </button>
+
+                </td>
+
+            </tr>
+
+        </tbody>
+
+    </table>
+
+</div>
+
+{% endblock %}
+
+{% block vueData %}
+<script>
+
+const pageData = {
+
+    types: [],
+
+    form: {
+        id: null,
+        name: ''
+    }
+
+}
+
+</script>
+{% endblock %}
+
+{% block vueMethods %}
+<script>
+
+const pageMethods = {
+
+    async onMounted() {
+        await this.loadTypes()
+    },
+
+    async loadTypes() {
+
+        const data = await this.apiRequest(
+            '/api/event-types/'
+        )
+
+        if (!data) return
+
+        this.types = data
+    },
+
+    async saveType() {
+
+        let url = '/api/event-types/'
+        let method = 'POST'
+
+        if (this.form.id) {
+            url += this.form.id + '/'
+            method = 'PUT'
+        }
+
+        const data = await this.apiRequest(url, {
+            method,
+            body: JSON.stringify(this.form)
+        })
+
+        if (!data) return
+
+        this.resetForm()
+
+        await this.loadTypes()
+    },
+
+    editType(type) {
+
+        this.form = {
+            id: type.id,
+            name: type.name
+        }
+
+    },
+
+    async deleteType(id) {
+
+        const confirmed = confirm(
+            '¿Eliminar tipo?'
+        )
+
+        if (!confirmed) return
+
+        const data = await this.apiRequest(
+            '/api/event-types/' + id + '/',
+            {
+                method: 'DELETE'
+            }
+        )
+
+        if (data === null) return
+
+        await this.loadTypes()
+    },
+
+    resetForm() {
+
+        this.form = {
+            id: null,
+            name: ''
+        }
+
+    }
+
+}
+
+</script>
+{% endblock %}
