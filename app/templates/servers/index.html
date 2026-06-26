@@ -183,7 +183,7 @@ const pageMethods = {
         let url = '/api/servers/?'
 
         if (this.ministryFilter) {
-            url += `ministry=${this.ministryFilter}&`
+            url += `ministryId=${this.ministryFilter}&`
         }
 
         if (this.isActiveFilter) {

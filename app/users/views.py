@@ -59,7 +59,8 @@ class UserViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, IsPastor]
 
 
-    def getQueryset(self):
+    def get_queryset(self):
+        print("1")
         role = self.request.query_params.get('role')
         is_active = self.request.query_params.get('is_active')
 
@@ -76,6 +77,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['patch'])
     def desactivar(self, request, pk=None):
+        print("2")
         user = self.get_object()
 
         if request.user.id == user.id:
@@ -89,6 +91,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['patch'])
     def activar(self, request, pk=None):
+        print("3")
         user = self.get_object()
 
         if request.user.id == user.id:

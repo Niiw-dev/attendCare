@@ -15,16 +15,9 @@ from users.permissions import IsPastor
 
 def serversView(request):
 
-    serversData = list(
-        Server.objects.values(
-            'id',
-            'firstName',
-            'lastName',
-            'document',
-            'isActive'
-        )
-    )
-
+    servers = Server.objects.prefetch_related('ministries')
+    serversData = ServerSerializer(servers, many=True).data
+    print(serversData)
     return render(request, 'servers/index.html',
         {
             'serversJson': serversData
@@ -44,18 +37,17 @@ class ServerViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
 
-        queryset = Server.objects.prefetch_related('ministries')
+        queryset = Server.objects.all()
 
         ministryId = self.request.query_params.get('ministryId')
 
         isActive = self.request.query_params.get('isActive')
-
+        print(ministryId)
         if ministryId:
-
-            queryset = queryset.filter(ministries__id=ministryId)
+            queryset = queryset.filter(ministries=ministryId)
+            print(queryset)
 
         if isActive is not None:
-
             queryset = queryset.filter(isActive=isActive == 'true')
 
         return queryset
