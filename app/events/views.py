@@ -7,6 +7,7 @@ from users.permissions import IsPastor
 from django.shortcuts import render, get_object_or_404
 from .models import (Event, EventType, EventStatus, RecurringEvent)
 from ministries.models import Ministry
+import json
 
 
 class EventViewSet(viewsets.ModelViewSet):
@@ -79,7 +80,17 @@ def eventsView(request):
         {
             'events': events,
             'eventTypes': EventType.objects.all(),
-            'eventStatuses': EventStatus.objects.all()
+            'eventStatuses': EventStatus.objects.all(),
+
+            "eventsJson": EventSerializer(events, many=True).data,
+            "eventTypesJson": EventTypeSerializer(
+                EventType.objects.all(),
+                many=True
+            ).data,
+            "eventStatusesJson": EventStatusSerializer(
+                EventStatus.objects.all(),
+                many=True
+            ).data,
         }
     )
 
@@ -131,25 +142,25 @@ class RecurringEventViewSet(viewsets.ModelViewSet):
 
 
 def eventTypesView(request):
-
+    print("1")
     editingType = None
 
     editId = request.GET.get('edit')
 
     if editId:
-
+        print("edit?")
         editingType = EventType.objects.get(
             id=editId
         )
 
     if request.method == 'POST':
-
+        print("post")
         typeId = request.POST.get(
             'typeId'
         )
 
         if typeId:
-
+            print("editar")
             eventType = EventType.objects.get(
                 id=typeId
             )
@@ -161,18 +172,23 @@ def eventTypesView(request):
             eventType.save()
 
         else:
+            print("create")
+
+            data = json.loads(request.body)
 
             EventType.objects.create(
-                name=request.POST.get('name')
+                name=data.get("name")
             )
 
         editingType = None
-
     return render(
         request,
         'events/types/index.html',
         {
-            'eventTypes': EventType.objects.all(),
+            "eventTypesJson": EventTypeSerializer(
+                EventType.objects.all(),
+                many=True
+            ).data,
             'editingType': editingType
         }
     )

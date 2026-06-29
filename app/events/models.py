@@ -8,7 +8,7 @@ from datetime import time
 
 class EventType(models.Model):
     code = models.CharField(max_length=50, unique=True)
-    description = models.TextField(blank=True)
+    description = models.TextField(blank=True,null=True)
     name = models.CharField(max_length=100)
     isActive = models.BooleanField(default=True)
 

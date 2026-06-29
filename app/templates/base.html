@@ -43,8 +43,20 @@
                 Servidores
             </a>
 
-            <a href="/servers/" class="text-gray-700 hover:text-blue-600">
-                Servidores
+            <a href="/events/view/" class="text-gray-700 hover:text-blue-600">
+                Eventos
+            </a>
+
+            <a href="/events/types/view/" class="text-gray-700 hover:text-blue-600">
+                Tipos de Eventos
+            </a>
+
+            <a href="/events/statuses/view/" class="text-gray-700 hover:text-blue-600">
+                Tipos de Estatus
+            </a>
+
+            <a href="/events/recurring/view/" class="text-gray-700 hover:text-blue-600">
+                Recurrencia
             </a>
         </div>
 
@@ -127,13 +139,37 @@ const baseMethods = {
         return data.access
     },
 
+    getCookie(name) {
+        let cookieValue = null
+
+        if (document.cookie && document.cookie !== '') {
+
+            const cookies = document.cookie.split(';')
+
+            for (let cookie of cookies) {
+
+                cookie = cookie.trim()
+
+                if (cookie.startsWith(name + '=')) {
+                    cookieValue = decodeURIComponent(
+                        cookie.substring(name.length + 1)
+                    )
+                    break
+                }
+            }
+        }
+
+        return cookieValue
+    },
+
     async apiRequest(url, options = {}) {
         const token = localStorage.getItem('access')
 
         const config = {
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + token
+                'Authorization': 'Bearer ' + token,
+                "X-CSRFToken":  this.getCookie('csrftoken'),
             },
             ...options
         }

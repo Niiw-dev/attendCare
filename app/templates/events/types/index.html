@@ -6,6 +6,8 @@ Tipos de Evento
 
 {% block content %}
 
+{{ eventTypesJson|json_script:"eventTypes" }}
+
 <div>
 
     <h1>
@@ -69,7 +71,7 @@ Tipos de Evento
 
 const pageData = {
 
-    types: [],
+    types: JSON.parse(document.getElementById('eventTypes').textContent),
 
     form: {
         id: null,
@@ -85,42 +87,25 @@ const pageData = {
 <script>
 
 const pageMethods = {
-
-    async onMounted() {
-        await this.loadTypes()
-    },
-
-    async loadTypes() {
-
-        const data = await this.apiRequest(
-            '/api/event-types/'
-        )
-
-        if (!data) return
-
-        this.types = data
-    },
-
     async saveType() {
 
-        let url = '/api/event-types/'
+        let url = '/events/types/view/'
         let method = 'POST'
 
         if (this.form.id) {
             url += this.form.id + '/'
             method = 'PUT'
         }
-
+        console.log(this.form);
+        
         const data = await this.apiRequest(url, {
             method,
-            body: JSON.stringify(this.form)
+            body: JSON.stringify(this.form),
         })
 
         if (!data) return
 
         this.resetForm()
-
-        await this.loadTypes()
     },
 
     editType(type) {
@@ -141,15 +126,13 @@ const pageMethods = {
         if (!confirmed) return
 
         const data = await this.apiRequest(
-            '/api/event-types/' + id + '/',
+            '/api/types/' + id + '/',
             {
                 method: 'DELETE'
             }
         )
 
         if (data === null) return
-
-        await this.loadTypes()
     },
 
     resetForm() {

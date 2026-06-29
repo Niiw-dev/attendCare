@@ -2,6 +2,10 @@
 
 {% block content %}
 
+{{ eventsJson|json_script:"events" }}
+{{ eventTypesJson|json_script:"eventTypes" }}
+{{ eventStatusesJson|json_script:"eventStatuses" }}
+
 <div class="container mt-4">
 
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -30,16 +34,13 @@
                     Todos
                 </option>
 
-                {% for type in eventTypes %}
-                    <option
-                        value="{{ type.id }}"
-                        {% if request.GET.type == type.id|stringformat:"s" %}
-                            selected
-                        {% endif %}
-                    >
-                        {{ type.name }}
-                    </option>
-                {% endfor %}
+                <option
+                    v-for="type in eventTypes"
+                    :key="type.id"
+                    :value="type.id"
+                >
+                    [[ type.name ]]
+                </option>
             </select>
         </div>
 
@@ -56,16 +57,13 @@
                     Todos
                 </option>
 
-                {% for status in eventStatuses %}
-                    <option
-                        value="{{ status.id }}"
-                        {% if request.GET.status == status.id|stringformat:"s" %}
-                            selected
-                        {% endif %}
-                    >
-                        {{ status.name }}
-                    </option>
-                {% endfor %}
+                <option
+                    v-for="status in eventStatuses"
+                    :key="status.id"
+                    :value="status.id"
+                >
+                    [[ status.name ]]
+                </option>
             </select>
         </div>
 
@@ -110,56 +108,23 @@
 
                 <tbody>
 
-                    {% for event in events %}
+                    <tr v-for="event in events" :key="event.id">
+                        <td>[[ event.name ]]</td>
+                        <td>[[ event.type.name ]]</td>
+                        <td>[[ event.status.name ]]</td>
+                        <td>[[ event.startDate ]]</td>
+                        <td>[[ event.endDate ]]</td>
+                        <td>[[ event.leaderMinistry.name ]]</td>
 
-                        <tr>
-
-                            <td>
-                                {{ event.name }}
-                            </td>
-
-                            <td>
-                                {{ event.type.name }}
-                            </td>
-
-                            <td>
-                                {{ event.status.name }}
-                            </td>
-
-                            <td>
-                                {{ event.startDate }}
-                            </td>
-
-                            <td>
-                                {{ event.endDate }}
-                            </td>
-
-                            <td>
-                                {{ event.leaderMinistry.name }}
-                            </td>
-
-                            <td>
-
-                                <a
-                                    href="{% url 'eventDetailView' event.id %}"
-                                    class="btn btn-sm btn-outline-primary"
-                                >
-                                    Ver
-                                </a>
-
-                            </td>
-
-                        </tr>
-
-                    {% empty %}
-
-                        <tr>
-                            <td colspan="7" class="text-center py-4">
-                                No hay eventos
-                            </td>
-                        </tr>
-
-                    {% endfor %}
+                        <td>
+                            <a
+                                class="btn btn-sm btn-outline-primary"
+                                :href="`/events/${event.id}/detail/`"
+                            >
+                                Ver
+                            </a>
+                        </td>
+                    </tr>
 
                 </tbody>
 
@@ -171,4 +136,37 @@
 
 </div>
 
+{% endblock %}
+
+
+{% block vueData %}
+<script>
+
+const pageData = {
+    events: JSON.parse(document.getElementById('events').textContent),
+    eventTypes: JSON.parse(document.getElementById('eventTypes').textContent),
+    eventStatuses: JSON.parse(document.getElementById('eventStatuses').textContent),
+}
+
+</script>
+{% endblock %}
+
+{% block vueMethods %}
+<script>
+
+const pageMethods = {
+    
+}
+
+</script>
+{% endblock %}
+
+{% block vueComputed %}
+<script>
+
+const pageComputed = {
+
+}
+
+</script>
 {% endblock %}
