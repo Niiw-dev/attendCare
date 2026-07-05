@@ -7,6 +7,7 @@ from users.permissions import IsPastor
 from django.shortcuts import render, get_object_or_404
 from .models import (Event, EventType, EventStatus, RecurringEvent)
 from ministries.models import Ministry
+from django.http import JsonResponse
 import json
 
 
@@ -142,45 +143,27 @@ class RecurringEventViewSet(viewsets.ModelViewSet):
 
 
 def eventTypesView(request):
-    print("1")
-    editingType = None
-
-    editId = request.GET.get('edit')
-
-    if editId:
-        print("edit?")
-        editingType = EventType.objects.get(
-            id=editId
-        )
-
     if request.method == 'POST':
-        print("post")
-        typeId = request.POST.get(
-            'typeId'
-        )
+        data = json.loads(request.body)
+
+        typeId = data.get('id')
 
         if typeId:
-            print("editar")
-            eventType = EventType.objects.get(
-                id=typeId
-            )
+            eventType = EventType.objects.get(id=typeId)
 
-            eventType.name = request.POST.get(
-                'name'
-            )
+            eventType.name = data.get('name')
 
             eventType.save()
-
         else:
-            print("create")
+            EventType.objects.create(name=data.get("name"))
 
-            data = json.loads(request.body)
+        return JsonResponse({
+            "eventTypesJson": EventTypeSerializer(
+                EventType.objects.all(),
+                many=True
+            ).data
+        })
 
-            EventType.objects.create(
-                name=data.get("name")
-            )
-
-        editingType = None
     return render(
         request,
         'events/types/index.html',
@@ -188,11 +171,9 @@ def eventTypesView(request):
             "eventTypesJson": EventTypeSerializer(
                 EventType.objects.all(),
                 many=True
-            ).data,
-            'editingType': editingType
+            ).data
         }
     )
-
 
 
 def eventStatusesView(request):

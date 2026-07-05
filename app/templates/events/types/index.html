@@ -88,15 +88,9 @@ const pageData = {
 
 const pageMethods = {
     async saveType() {
-
         let url = '/events/types/view/'
-        let method = 'POST'
-
-        if (this.form.id) {
-            url += this.form.id + '/'
-            method = 'PUT'
-        }
-        console.log(this.form);
+        method = 'POST';
+        console.log(this.form.id);
         
         const data = await this.apiRequest(url, {
             method,
@@ -105,6 +99,9 @@ const pageMethods = {
 
         if (!data) return
 
+        this.types = data.eventTypesJson;
+        console.log(this.types);
+        
         this.resetForm()
     },
 
