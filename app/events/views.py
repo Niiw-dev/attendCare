@@ -89,10 +89,40 @@ class EventStatusViewSet(viewsets.ModelViewSet):
     queryset = EventStatus.objects.filter(isActive=True)
     serializer_class = EventStatusSerializer
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsPastor]
 
     def get_queryset(self):
-        return EventStatus.objects.filter(isActive=True)
+        isActive = self.request.query_params.get('isActive')
+
+        if isActive is None:
+            return EventStatus.objects.all()
+
+        return EventStatus.objects.filter(isActive=isActive == 'true')
+    
+    @action(detail=True, methods=['patch'])
+    def deactivate(self, request, pk=None):
+        status = self.get_object()
+
+        status.isActive = False
+
+        status.save()
+
+        return Response({
+            "message": "Estado desactivado"
+        })
+
+
+    @action(detail=True, methods=['patch'])
+    def activate(self, request, pk=None):
+        status = self.get_object()
+
+        status.isActive = True
+
+        status.save()
+
+        return Response({
+            "message": "Estado activado"
+        })
 
 
 
@@ -211,57 +241,38 @@ def eventTypesView(request):
 
 
 def eventStatusesView(request):
-
-    editingStatus = None
-
-    editId = request.GET.get('edit')
-
-    if editId:
-
-        editingStatus = EventStatus.objects.get(
-            id=editId
-        )
-
     if request.method == 'POST':
+        data = json.loads(request.body)
 
-        statusId = request.POST.get(
-            'statusId'
-        )
+        statusId = data.get('id')
 
         if statusId:
+            eventStatus = EventStatus.objects.get(id=statusId)
 
-            status = EventStatus.objects.get(
-                id=statusId
-            )
+            eventStatus.name = data.get('name')
+            eventStatus.code = data.get('code')
 
-            status.name = request.POST.get(
-                'name'
-            )
-
-            status.code = request.POST.get(
-                'code'
-            )
-
-            status.save()
-
+            eventStatus.save()
         else:
+            EventStatus.objects.create(name=data.get("name"),code=data.get("code"))
 
-            EventStatus.objects.create(
-                name=request.POST.get('name'),
-                code=request.POST.get('code')
-            )
-
-        editingStatus = None
+        return JsonResponse({
+            "eventStatusJson": EventStatusSerializer(
+                EventStatus.objects.all(),
+                many=True
+            ).data
+        })
 
     return render(
         request,
         'events/status/index.html',
         {
-            'statuses': EventStatus.objects.all(),
-            'editingStatus': editingStatus
+            "eventStatusJson": EventStatusSerializer(
+                EventStatus.objects.all(),
+                many=True
+            ).data
         }
     )
-
 
 
 def recurringEventsView(request):

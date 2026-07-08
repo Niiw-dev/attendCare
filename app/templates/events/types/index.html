@@ -135,22 +135,22 @@ const pageMethods = {
         await this.fetchTypes()
     },
 
-        async activateType(type) {
+    async activateType(type) {
 
-            if (!confirm('¿Deseas activar este Tipo?')) {
-                return
+        if (!confirm('¿Deseas activar este Tipo?')) {
+            return
+        }
+
+        const data = await this.apiRequest(`/api/types/${type.id}/activate/`,
+            {
+                method: 'PATCH'
             }
+        )
 
-            const data = await this.apiRequest(`/api/types/${type.id}/activate/`,
-                {
-                    method: 'PATCH'
-                }
-            )
+        if (!data) return
 
-            if (!data) return
-
-            await this.fetchTypes()
-        },
+        await this.fetchTypes()
+    },
 
     async fetchTypes() {
         let url = '/api/types/?'

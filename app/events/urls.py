@@ -10,7 +10,7 @@ router.register('events', EventViewSet)
 
 router.register(r'api/types',EventTypeViewSet)
 
-router.register('eventStatuses', EventStatusViewSet)
+router.register(r'api/status', EventStatusViewSet)
 
 router.register('recurring-events', RecurringEventViewSet)
 

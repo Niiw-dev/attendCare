@@ -5,7 +5,7 @@ Estados de Evento
 {% endblock %}
 
 {% block content %}
-
+{{ eventStatusJson|json_script:"eventStatus" }}
 <div>
 
     <h1>
@@ -75,10 +75,12 @@ Estados de Evento
                         Editar
                     </button>
 
-                    <button
-                        @click="deleteStatus(status.id)"
-                    >
-                        Eliminar
+                    <button v-if="status.isActive" @click="deactivateStatus(status)">
+                        Desactivar
+                    </button>
+
+                    <button v-else @click="activateStatus(status)">
+                        Activar
                     </button>
 
                 </td>
@@ -98,7 +100,7 @@ Estados de Evento
 
 const pageData = {
 
-    statuses: [],
+    statuses: JSON.parse(document.getElementById('eventStatus').textContent),
 
     form: {
         id: null,
@@ -115,42 +117,20 @@ const pageData = {
 <script>
 
 const pageMethods = {
-
-    async onMounted() {
-        await this.loadStatuses()
-    },
-
-    async loadStatuses() {
-
-        const data = await this.apiRequest(
-            '/api/event-statuses/'
-        )
-
-        if (!data) return
-
-        this.statuses = data
-    },
-
     async saveStatus() {
-
-        let url = '/api/event-statuses/'
-        let method = 'POST'
-
-        if (this.form.id) {
-            url += this.form.id + '/'
-            method = 'PUT'
-        }
-
+        let url = '/events/statuses/view/'
+        method = 'POST';
+        
         const data = await this.apiRequest(url, {
             method,
-            body: JSON.stringify(this.form)
+            body: JSON.stringify(this.form),
         })
 
         if (!data) return
 
+        this.statuses = data.eventStatusJson;
+        
         this.resetForm()
-
-        await this.loadStatuses()
     },
 
     editStatus(status) {
@@ -163,24 +143,52 @@ const pageMethods = {
 
     },
 
-    async deleteStatus(id) {
+    async deactivateStatus(status) {
 
-        const confirmed = confirm(
-            '¿Eliminar estado?'
-        )
+        if (!confirm('¿Deseas desactivar este Estado?')) {
+            return
+        }
 
-        if (!confirmed) return
-
-        const data = await this.apiRequest(
-            '/api/event-statuses/' + id + '/',
+        const data = await this.apiRequest(`/api/status/${status.id}/deactivate/`,
             {
-                method: 'DELETE'
+                method: 'PATCH'
             }
         )
 
-        if (data === null) return
+        if (!data) return
 
-        await this.loadStatuses()
+        await this.fetchStatus()
+    },
+
+    async activateStatus(status) {
+
+        if (!confirm('¿Deseas activar este Estado?')) {
+            return
+        }
+
+        const data = await this.apiRequest(`/api/status/${status.id}/activate/`,
+            {
+                method: 'PATCH'
+            }
+        )
+
+        if (!data) return
+
+        await this.fetchStatus()
+    },
+
+    async fetchStatus() {
+        let url = '/api/status/?'
+
+        if (this.isActiveFilter) {
+            url += `isActive=${this.isActiveFilter}`
+        }
+
+        const data = await this.apiRequest(url)
+
+        if (!data) return
+
+        this.statuses = data
     },
 
     resetForm() {
