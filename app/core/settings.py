@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'ministries',
     'servers',
     'events',
+    'django_extensions',
 ]
 
 MIDDLEWARE = [

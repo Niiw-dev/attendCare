@@ -50,8 +50,12 @@ Tipos de Evento
                         Editar
                     </button>
 
-                    <button @click="deleteType(type.id)">
-                        Eliminar
+                    <button v-if="type.isActive" @click="deactivateType(type)">
+                        Desactivar
+                    </button>
+
+                    <button v-else @click="activateType(type)">
+                        Activar
                     </button>
 
                 </td>
@@ -114,22 +118,52 @@ const pageMethods = {
 
     },
 
-    async deleteType(id) {
+    async deactivateType(type) {
 
-        const confirmed = confirm(
-            '¿Eliminar tipo?'
-        )
+        if (!confirm('¿Deseas desactivar este Tipo?')) {
+            return
+        }
 
-        if (!confirmed) return
-
-        const data = await this.apiRequest(
-            '/api/types/' + id + '/',
+        const data = await this.apiRequest(`/api/types/${type.id}/deactivate/`,
             {
-                method: 'DELETE'
+                method: 'PATCH'
             }
         )
 
-        if (data === null) return
+        if (!data) return
+
+        await this.fetchTypes()
+    },
+
+        async activateType(type) {
+
+            if (!confirm('¿Deseas activar este Tipo?')) {
+                return
+            }
+
+            const data = await this.apiRequest(`/api/types/${type.id}/activate/`,
+                {
+                    method: 'PATCH'
+                }
+            )
+
+            if (!data) return
+
+            await this.fetchTypes()
+        },
+
+    async fetchTypes() {
+        let url = '/api/types/?'
+
+        if (this.isActiveFilter) {
+            url += `isActive=${this.isActiveFilter}`
+        }
+
+        const data = await this.apiRequest(url)
+
+        if (!data) return
+
+        this.types = data
     },
 
     resetForm() {

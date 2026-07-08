@@ -1,5 +1,6 @@
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import action
 from events.models import (Event, EventType, EventStatus)
 from events.serializers import (EventSerializer, EventTypeSerializer, EventStatusSerializer, RecurringEventSerializer)
 from events.serializers import EventSerializer
@@ -8,6 +9,7 @@ from django.shortcuts import render, get_object_or_404
 from .models import (Event, EventType, EventStatus, RecurringEvent)
 from ministries.models import Ministry
 from django.http import JsonResponse
+from rest_framework.response import Response
 import json
 
 
@@ -41,13 +43,45 @@ class EventViewSet(viewsets.ModelViewSet):
 
 
 class EventTypeViewSet(viewsets.ModelViewSet):
-    queryset = EventType.objects.filter(isActive=True)
+    queryset = EventType.objects.all()
     serializer_class = EventTypeSerializer
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,IsPastor]
 
     def get_queryset(self):
-        return EventType.objects.filter(isActive=True)
+        isActive = self.request.query_params.get('isActive')
+
+        if isActive is None:
+            return EventType.objects.all()
+
+        return EventType.objects.filter(isActive=isActive == 'true')
+    
+    @action(detail=True, methods=['patch'])
+    def deactivate(self, request, pk=None):
+        print("Si entra")
+        type = self.get_object()
+        print(type)
+        type.isActive = False
+
+        type.save()
+
+        return Response({
+            "message": "Tipo desactivado"
+        })
+
+
+    @action(detail=True, methods=['patch'])
+    def activate(self, request, pk=None):
+        print("Si entra")
+        type = self.get_object()
+        print(type)
+        type.isActive = True
+
+        type.save()
+
+        return Response({
+            "message": "Tipo activado"
+        })
 
 
 

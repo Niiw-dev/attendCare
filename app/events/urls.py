@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, include
 from rest_framework.routers import SimpleRouter
 
 from .views import *
@@ -8,7 +8,7 @@ router = SimpleRouter()
 
 router.register('events', EventViewSet)
 
-router.register('eventTypes', EventTypeViewSet)
+router.register(r'api/types',EventTypeViewSet)
 
 router.register('eventStatuses', EventStatusViewSet)
 
@@ -21,6 +21,5 @@ urlpatterns = [
     path('events/types/view/', eventTypesView, name='eventTypesView'),
     path('events/statuses/view/', eventStatusesView, name='eventStatusesView'),
     path('events/recurring/view/',recurringEventsView, name='recurringEventsView'),
+    path('',include(router.urls)),
 ]
-
-urlpatterns += router.urls
