@@ -7,7 +7,6 @@ from datetime import time
 
 
 class EventType(models.Model):
-    code = models.CharField(max_length=50, unique=True,null=True)
     description = models.TextField(blank=True,null=True)
     name = models.CharField(max_length=100)
     isActive = models.BooleanField(default=True)
@@ -18,10 +17,8 @@ class EventType(models.Model):
 
 
 class EventStatus(models.Model):
-    code = models.CharField(max_length=50, unique=True)
     name = models.CharField(max_length=100)
     color = models.CharField(max_length=20, null=True,blank=True)
-    order = models.IntegerField(default=0)
     isActive = models.BooleanField(default=True)
 
     def __str__(self):

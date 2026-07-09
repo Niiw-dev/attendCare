@@ -19,11 +19,6 @@ Estados de Evento
             placeholder="Nombre"
         >
 
-        <input
-            v-model="form.code"
-            placeholder="Código"
-        >
-
         <button @click="saveStatus">
             [[ form.id ? 'Actualizar' : 'Guardar' ]]
         </button>
@@ -39,8 +34,6 @@ Estados de Evento
                 <th>ID</th>
 
                 <th>Nombre</th>
-
-                <th>Código</th>
 
                 <th></th>
 
@@ -61,10 +54,6 @@ Estados de Evento
 
                 <td>
                     [[ status.name ]]
-                </td>
-
-                <td>
-                    [[ status.code ]]
                 </td>
 
                 <td>
@@ -105,7 +94,6 @@ const pageData = {
     form: {
         id: null,
         name: '',
-        code: ''
     }
 
 }
@@ -138,7 +126,6 @@ const pageMethods = {
         this.form = {
             id: status.id,
             name: status.name,
-            code: status.code
         }
 
     },
@@ -196,7 +183,6 @@ const pageMethods = {
         this.form = {
             id: null,
             name: '',
-            code: ''
         }
 
     }

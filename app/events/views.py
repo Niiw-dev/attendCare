@@ -1,6 +1,7 @@
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
+from servers.models import ServerMinistry
 from events.models import (Event, EventType, EventStatus)
 from events.serializers import (EventSerializer, EventTypeSerializer, EventStatusSerializer, RecurringEventSerializer)
 from events.serializers import EventSerializer
@@ -27,7 +28,7 @@ class EventViewSet(viewsets.ModelViewSet):
         endDate = self.request.query_params.get('endDate')
 
         if status:
-            queryset = queryset.filter(status__code=status)
+            queryset = queryset.filter(status__id=status)
 
         if typeId:
             queryset = queryset.filter(type_id=typeId)
@@ -40,6 +41,39 @@ class EventViewSet(viewsets.ModelViewSet):
 
         return queryset.order_by('-startDate')
     
+
+    @action(detail=True, methods=['patch'])
+    def deactivate(self, request, pk=None):
+
+        event = self.get_object()
+
+        event.status_id = 5
+
+        event.save()
+
+        return Response({
+            'message': 'Evento Cancelado'
+        })
+
+
+    @action(detail=True, methods=['post'])
+    def ministries(self, request, pk=None):
+
+        server = self.get_object()
+
+        ministryIds = request.data.get('ministryIds', [])
+
+        ServerMinistry.objects.filter(server=server).delete()
+
+        ministries = Ministry.objects.filter(id__in=ministryIds, isActive=True)
+
+        for ministry in ministries:
+
+            ServerMinistry.objects.create(server=server, ministry=ministry)
+
+        return Response({
+            'message': 'Ministerios actualizados'
+        })
 
 
 class EventTypeViewSet(viewsets.ModelViewSet):
@@ -250,11 +284,10 @@ def eventStatusesView(request):
             eventStatus = EventStatus.objects.get(id=statusId)
 
             eventStatus.name = data.get('name')
-            eventStatus.code = data.get('code')
 
             eventStatus.save()
         else:
-            EventStatus.objects.create(name=data.get("name"),code=data.get("code"))
+            EventStatus.objects.create(name=data.get("name"))
 
         return JsonResponse({
             "eventStatusJson": EventStatusSerializer(

@@ -33,7 +33,6 @@ class EventSerializer(serializers.ModelSerializer):
         return {
             'id': obj.status.id,
             'name': obj.status.name,
-            'code': obj.status.code
         }
 
 

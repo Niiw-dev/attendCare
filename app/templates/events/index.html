@@ -1,161 +1,309 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
+
+{% block title %}
+Eventos
+{% endblock %}
 
 {% block content %}
 
-{{ eventsJson|json_script:"events" }}
+{{ eventsJson|json_script:"events-data" }}
 {{ eventTypesJson|json_script:"eventTypes" }}
 {{ eventStatusesJson|json_script:"eventStatuses" }}
 
-<div class="container mt-4">
+<div>
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Eventos</h2>
+    <h1>Eventos</h1>
 
-        <a
-            href="{% url 'eventCreateView' %}"
-            class="btn btn-primary"
-        >
-            Crear evento
-        </a>
-    </div>
+    <p v-if="error">
+        [[ error ]]
+    </p>
 
-    <form method="GET" class="row g-3 mb-4">
+    <div>
 
-        <div class="col-md-3">
-            <label class="form-label">
-                Tipo
-            </label>
+        <select v-model="typeFilter" @change="fetchEvents">
+            <option value="">
+                Todos los tipos
+            </option>
 
-            <select
-                name="type"
-                class="form-select"
-            >
-                <option value="">
-                    Todos
-                </option>
+            <option
+                v-for="type in eventTypes"
+                :key="type.id"
+                :value="type.id">
 
-                <option
-                    v-for="type in eventTypes"
-                    :key="type.id"
-                    :value="type.id"
-                >
-                    [[ type.name ]]
-                </option>
-            </select>
-        </div>
+                [[ type.name ]]
 
-        <div class="col-md-3">
-            <label class="form-label">
-                Estado
-            </label>
+            </option>
 
-            <select
-                name="status"
-                class="form-select"
-            >
-                <option value="">
-                    Todos
-                </option>
+        </select>
 
-                <option
-                    v-for="status in eventStatuses"
-                    :key="status.id"
-                    :value="status.id"
-                >
-                    [[ status.name ]]
-                </option>
-            </select>
-        </div>
+        <select
+            v-model="statusFilter"
+            @change="fetchEvents">
 
-        <div class="col-md-3">
-            <label class="form-label">
-                Fecha inicio
-            </label>
+            <option value="">
+                Todos los estados
+            </option>
 
-            <input
-                type="date"
-                name="startDate"
-                value="{{ request.GET.startDate }}"
-                class="form-control"
-            >
-        </div>
+            <option
+                v-for="status in eventStatuses"
+                :key="status.id"
+                :value="status.id">
 
-        <div class="col-md-3 d-flex align-items-end">
-            <button class="btn btn-dark w-100">
-                Filtrar
-            </button>
-        </div>
+                [[ status.name ]]
 
-    </form>
+            </option>
 
-    <div class="card shadow-sm border-0">
+        </select>
 
-        <div class="table-responsive">
-
-            <table class="table table-hover align-middle mb-0">
-
-                <thead class="table-light">
-                    <tr>
-                        <th>Nombre</th>
-                        <th>Tipo</th>
-                        <th>Estado</th>
-                        <th>Fecha inicio</th>
-                        <th>Fecha fin</th>
-                        <th>Ministerio líder</th>
-                        <th></th>
-                    </tr>
-                </thead>
-
-                <tbody>
-
-                    <tr v-for="event in events" :key="event.id">
-                        <td>[[ event.name ]]</td>
-                        <td>[[ event.type.name ]]</td>
-                        <td>[[ event.status.name ]]</td>
-                        <td>[[ event.startDate ]]</td>
-                        <td>[[ event.endDate ]]</td>
-                        <td>[[ event.leaderMinistry.name ]]</td>
-
-                        <td>
-                            <a
-                                class="btn btn-sm btn-outline-primary"
-                                :href="`/events/${event.id}/detail/`"
-                            >
-                                Ver
-                            </a>
-                        </td>
-                    </tr>
-
-                </tbody>
-
-            </table>
-
-        </div>
+        <input
+            type="date"
+            v-model="startDateFilter"
+            @change="fetchEvents">
 
     </div>
+
+    <hr>
+
+    <h2>
+
+        [[ form.id
+            ? 'Editar evento'
+            : 'Crear evento'
+        ]]
+
+    </h2>
+
+    <div>
+
+        <label>Nombre</label>
+
+        <input
+            type="text"
+            v-model="form.name">
+
+    </div>
+
+    <div>
+
+        <label>Tipo</label>
+
+        <select
+            v-model="form.type">
+
+            <option
+                v-for="type in eventTypes"
+                :value="type.id">
+
+                [[ type.name ]]
+
+            </option>
+
+        </select>
+
+    </div>
+
+    <div>
+
+        <label>Ministerio líder</label>
+
+        <select
+            v-model="form.leaderMinistry">
+
+            <option
+                v-for="ministry in activeMinistries"
+                :value="ministry.id">
+
+                [[ ministry.name ]]
+
+            </option>
+
+        </select>
+
+    </div>
+
+    <div>
+
+        <label>Inicio</label>
+
+        <input
+            type="datetime-local"
+            v-model="form.startDate">
+
+    </div>
+
+    <div>
+
+        <label>Fin</label>
+
+        <input
+            type="datetime-local"
+            v-model="form.endDate">
+
+    </div>
+
+    <div>
+
+        <label>
+            Ministerios participantes
+        </label>
+
+        <select
+            id="ministriesSelect"
+            multiple>
+
+            <option
+                v-for="ministry in activeMinistries"
+                :value="ministry.id">
+
+                [[ ministry.name ]]
+
+            </option>
+
+        </select>
+
+    </div>
+
+    <br>
+
+    <button @click="saveEvent">
+
+        [[ form.id
+            ? 'Actualizar'
+            : 'Crear'
+        ]]
+
+    </button>
+
+    <button
+        v-if="form.id"
+        @click="resetForm">
+
+        Cancelar
+
+    </button>
+
+    <hr>
+
+    <table border="1">
+
+        <thead>
+
+        <tr>
+
+            <th>Nombre</th>
+
+            <th>Tipo</th>
+
+            <th>Estado</th>
+
+            <th>Inicio</th>
+
+            <th>Fin</th>
+
+            <th>Acciones</th>
+
+        </tr>
+
+        </thead>
+
+        <tbody>
+
+        <tr
+            v-for="event in events"
+            :key="event.id">
+
+            <td>
+                [[ event.name ]]
+            </td>
+
+            <td>
+                [[ event.typeData.name ]]
+            </td>
+
+            <td>
+                [[ event.statusData.name ]]
+            </td>
+
+            <td>
+                [[ event.startDate ]]
+            </td>
+
+            <td>
+                [[ event.endDate ]]
+            </td>
+
+            <td v-if="event.status!=5">
+
+                <button @click="editEvent(event)">
+                    Editar
+                </button>
+
+                <button @click="deactivateEvent(event)">
+                    Cancelar
+                </button>
+
+            </td>
+
+        </tr>
+
+        </tbody>
+
+    </table>
 
 </div>
 
 {% endblock %}
 
-
 {% block vueData %}
 <script>
 
 const pageData = {
-    events: JSON.parse(document.getElementById('events').textContent),
-    eventTypes: JSON.parse(document.getElementById('eventTypes').textContent),
-    eventStatuses: JSON.parse(document.getElementById('eventStatuses').textContent),
-}
 
-</script>
-{% endblock %}
+    events: JSON.parse(
+        document.getElementById(
+            'events-data'
+        ).textContent
+    ),
 
-{% block vueMethods %}
-<script>
+    ministries: [],
 
-const pageMethods = {
-    
+    eventTypes: JSON.parse(
+        document.getElementById(
+            'eventTypes'
+        ).textContent
+    ),
+
+    eventStatuses: JSON.parse(
+        document.getElementById(
+            'eventStatuses'
+        ).textContent
+    ),
+
+    typeFilter: '',
+
+    statusFilter: '',
+
+    startDateFilter: '',
+
+    form: {
+
+        id:null,
+
+        name:'',
+
+        type:'',
+
+        status:'',
+
+        leaderMinistry:'',
+
+        startDate:'',
+
+        endDate:'',
+
+        ministryIds:[]
+    }
+
 }
 
 </script>
@@ -165,6 +313,199 @@ const pageMethods = {
 <script>
 
 const pageComputed = {
+
+    activeMinistries(){
+
+        return this.ministries.filter(
+            ministry=>ministry.isActive
+        )
+
+    }
+
+}
+
+</script>
+{% endblock %}
+
+{% block vueMethods %}
+<script>
+
+const pageMethods = {
+
+async fetchEvents(){
+
+    let url="/api/events/?"
+
+    if(this.typeFilter){
+
+        url+=`typeId=${this.typeFilter}&`
+
+    }
+
+    if(this.statusFilter){
+
+        url+=`status=${this.statusFilter}&`
+
+    }
+
+    if(this.startDateFilter){
+
+        url+=`startDate=${this.startDateFilter}`
+
+    }
+
+    const data=await this.apiRequest(url)
+
+    if(!data) return
+
+    this.events=data
+
+},
+
+async fetchTypes(){
+
+    this.eventTypes=
+        await this.apiRequest("/api/eventTypes/")
+
+},
+
+async fetchStatuses(){
+
+    this.eventStatuses=
+        await this.apiRequest("/api/eventStatuses/")
+
+},
+
+async fetchMinistries(){
+
+    this.ministries=
+        await this.apiRequest("/api/ministries/?isActive=true")
+
+    this.$nextTick(()=>{
+
+        this.initializeSelect2()
+
+    })
+
+},
+
+initializeSelect2(){
+
+    const vm=this
+
+    $('#ministriesSelect')
+    .select2({
+        width:'100%'
+    })
+    .on('change',function(){
+
+        vm.form.ministryIds=$(this).val()
+            ?$(this).val().map(Number)
+            :[]
+
+    })
+
+},
+
+editEvent(event){
+
+    this.form={
+
+        id:event.id,
+
+        name:event.name,
+
+        type:event.type,
+
+        status:event.status,
+
+        leaderMinistry:event.leaderMinistry,
+
+        startDate:event.startDate.substring(0,16),
+
+        endDate:event.endDate.substring(0,16),
+
+        ministryIds:event.ministries.map(
+            ministry=>ministry.id
+        )
+
+    }
+
+    this.$nextTick(()=>{
+
+        $('#ministriesSelect')
+            .val(this.form.ministryIds)
+            .trigger('change')
+
+    })
+
+},
+
+resetForm(){
+
+    this.form={
+        id:null,
+        name:'',
+        type:'',
+        status:'',
+        leaderMinistry:'',
+        startDate:'',
+        endDate:'',
+        ministryIds:[]
+    }
+
+    $('#ministriesSelect')
+        .val([])
+        .trigger('change')
+
+},
+
+async saveEvent(){
+
+    let url=`/api/events/${this.form.id}/`;
+    let method="PATCH";
+
+    if(this.form.id == null){
+        this.form.status = 1;
+        url="/api/events/";
+        method="POST";
+    }
+
+    const data=await this.apiRequest(
+        url,
+        {
+            method,
+            body:JSON.stringify(this.form)
+        }
+    )
+
+    if(!data) return
+
+    this.resetForm()
+
+    await this.fetchEvents()
+
+},
+async deactivateEvent(event) {
+if (!confirm('¿Deseas Cancelar este Evento?')) {
+    return
+}
+
+const data = await this.apiRequest(
+    `/api/events/${event.id}/deactivate/`,
+    {
+        method: 'PATCH'
+    }
+)
+
+if (!data) return
+
+await this.fetchEvents()
+},
+
+async onMounted(){
+    await this.fetchMinistries()
+}
 
 }
 

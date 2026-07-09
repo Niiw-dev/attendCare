@@ -6,7 +6,7 @@ from .views import *
 
 router = SimpleRouter()
 
-router.register('events', EventViewSet)
+router.register(r'api/events', EventViewSet)
 
 router.register(r'api/types',EventTypeViewSet)
 
