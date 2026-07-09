@@ -12,7 +12,7 @@ router.register(r'api/types',EventTypeViewSet)
 
 router.register(r'api/status', EventStatusViewSet)
 
-router.register('recurring-events', RecurringEventViewSet)
+router.register(r'api/recurringEvents', RecurringEventViewSet)
 
 urlpatterns = [
     path('events/view/', eventsView, name='eventListView'),

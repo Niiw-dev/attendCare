@@ -6,6 +6,8 @@ Eventos Recurrentes
 
 {% block content %}
 
+{{ recurringEventsJson|json_script:"recurringEvents" }}
+
 <div>
 
     <h1>
@@ -49,18 +51,6 @@ Eventos Recurrentes
                 :value="type.id"
             >
                 [[ type.name ]]
-            </option>
-
-        </select>
-
-        <select v-model="form.status">
-
-            <option
-                v-for="status in statuses"
-                :key="status.id"
-                :value="status.id"
-            >
-                [[ status.name ]]
             </option>
 
         </select>
@@ -122,10 +112,12 @@ Eventos Recurrentes
                         Editar
                     </button>
 
-                    <button
-                        @click="deleteRecurring(event.id)"
-                    >
-                        Eliminar
+                    <button v-if="event.isActive" @click="deactivateEvent(event)">
+                        Desactivar
+                    </button>
+
+                    <button v-else @click="activateEvent(event)">
+                        Activar
                     </button>
 
                 </td>
@@ -145,11 +137,9 @@ Eventos Recurrentes
 
 const pageData = {
 
-    recurringEvents: [],
+    recurringEvents: JSON.parse(document.getElementById('recurringEvents').textContent),
 
     eventTypes: [],
-
-    statuses: [],
 
     form: {
         id: null,
@@ -176,7 +166,6 @@ const pageMethods = {
         await Promise.all([
             this.loadRecurring(),
             this.loadEventTypes(),
-            this.loadStatuses()
         ])
 
     },
@@ -184,10 +173,10 @@ const pageMethods = {
     async loadRecurring() {
 
         const data = await this.apiRequest(
-            '/api/recurring-events/'
+            '/api/recurringEvents/'
         )
 
-        if (!data) return
+        if (!data) return 
 
         this.recurringEvents = data
     },
@@ -203,25 +192,16 @@ const pageMethods = {
         this.eventTypes = data
     },
 
-    async loadStatuses() {
-
-        const data = await this.apiRequest(
-            '/api/event-statuses/'
-        )
-
-        if (!data) return
-
-        this.statuses = data
-    },
-
     async saveRecurring() {
 
-        let url = '/api/recurring-events/'
+        let url = '/api/recurringEvents/'
         let method = 'POST'
 
         if (this.form.id) {
             url += this.form.id + '/'
-            method = 'PUT'
+            method = 'PATCH'
+        } else {
+            this.form.status = 1;
         }
 
         const data = await this.apiRequest(url, {
@@ -250,22 +230,36 @@ const pageMethods = {
 
     },
 
-    async deleteRecurring(id) {
+    async deactivateEvent(event) {
 
-        const confirmed = confirm(
-            '¿Eliminar evento recurrente?'
-        )
+        if (!confirm('¿Deseas desactivar este Evento?')) {
+            return
+        }
 
-        if (!confirmed) return
-
-        const data = await this.apiRequest(
-            '/api/recurring-events/' + id + '/',
+        const data = await this.apiRequest(`/api/recurringEvents/${event.id}/deactivate/`,
             {
-                method: 'DELETE'
+                method: 'PATCH'
             }
         )
 
-        if (data === null) return
+        if (!data) return
+
+        await this.loadRecurring()
+    },
+
+    async activateEvent(event) {
+
+        if (!confirm('¿Deseas activar este Evento?')) {
+            return
+        }
+
+        const data = await this.apiRequest(`/api/recurringEvents/${event.id}/activate/`,
+            {
+                method: 'PATCH'
+            }
+        )
+
+        if (!data) return
 
         await this.loadRecurring()
     },

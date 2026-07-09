@@ -222,22 +222,42 @@ def detailEventView(request, eventId):
 
 
 class RecurringEventViewSet(viewsets.ModelViewSet):
-
-    queryset = RecurringEvent.objects.prefetch_related(
-        'ministries'
-    ).select_related(
-        'eventType',
-        'leaderMinistry',
-        'status'
-    )
-
+    queryset = RecurringEvent.objects.filter(isActive=True)
     serializer_class = RecurringEventSerializer
+    permission_classes = [IsAuthenticated, IsPastor]
 
-    permission_classes = [
-        IsAuthenticated,
-        IsPastor
-    ]
+    def get_queryset(self):
+        isActive = self.request.query_params.get('isActive')
 
+        if isActive is None:
+            return RecurringEvent.objects.all()
+
+        return RecurringEvent.objects.filter(isActive=isActive == 'true')
+    
+    @action(detail=True, methods=['patch'])
+    def deactivate(self, request, pk=None):
+        RecurringEvent = self.get_object()
+
+        RecurringEvent.isActive = False
+
+        RecurringEvent.save()
+
+        return Response({
+            "message": "Evento Recurrente desactivado"
+        })
+
+    @action(detail=True, methods=['patch'])
+    def activate(self, request, pk=None):
+        RecurringEvent = self.get_object()
+
+        RecurringEvent.isActive = True
+
+        RecurringEvent.save()
+
+        return Response({
+            "message": "Evento Recurrente activado"
+        })
+    
 
 
 def eventTypesView(request):

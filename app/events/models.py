@@ -70,18 +70,7 @@ class RecurringEvent(models.Model):
     endTime = models.TimeField()
     eventType = models.ForeignKey('EventType', on_delete=models.PROTECT)
     status = models.ForeignKey('EventStatus', on_delete=models.PROTECT)
-    leaderMinistry = models.ForeignKey(Ministry, on_delete=models.PROTECT, related_name='leader_recurring_events')
-    ministries = models.ManyToManyField(Ministry, through='RecurringEventMinistry', related_name='recurring_events')
     isActive = models.BooleanField(default=True)
 
     def __str__(self):
         return self.name
-
-
-
-class RecurringEventMinistry(models.Model):
-    recurringEvent = models.ForeignKey(RecurringEvent, on_delete=models.CASCADE)
-    ministry = models.ForeignKey(Ministry, on_delete=models.CASCADE)
-
-    class Meta:
-        unique_together = ('recurringEvent', 'ministry')

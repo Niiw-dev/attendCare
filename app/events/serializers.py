@@ -136,55 +136,56 @@ class EventStatusSerializer(serializers.ModelSerializer):
 
 
 class RecurringEventSerializer(serializers.ModelSerializer):
-    ministryIds = serializers.ListField(child=serializers.IntegerField(), write_only=True)
-    ministries = serializers.SerializerMethodField()
+    eventTypeData = serializers.SerializerMethodField()
+    statusData = serializers.SerializerMethodField()
 
     class Meta:
         model = RecurringEvent
 
-        fields = ['id', 'name', 'weekday', 'startTime', 'endTime', 'eventType', 'leaderMinistry',
-                  'status', 'isActive', 'ministries', 'ministryIds']
+        fields = ['id', 'name', 'weekday', 'startTime', 'endTime', 'eventType',
+            'eventTypeData', 'status', 'statusData', 'isActive',]
 
-    def get_ministries(self, obj):
-        return [
-            {
-                'id': ministry.id,
-                'name': ministry.name
-            }
-            for ministry in obj.ministries.all()
-        ]
+
+    def get_eventTypeData(self, obj):
+        return {
+            'id': obj.eventType.id,
+            'name': obj.eventType.name
+        }
+
+
+    def get_statusData(self, obj):
+        return {
+            'id': obj.status.id,
+            'name': obj.status.name
+        }
+
 
     def validate(self, attrs):
-        if attrs['startTime'] >= attrs['endTime']:
-            raise serializers.ValidationError('La hora inicial debe ser menor')
+        startTime = attrs.get(
+            'startTime',
+            self.instance.startTime if self.instance else None
+        )
+        endTime = attrs.get(
+            'endTime',
+            self.instance.endTime if self.instance else None
+        )
 
-        if len(attrs['ministryIds']) == 0:
-            raise serializers.ValidationError('Debe seleccionar ministerios')
+        if startTime >= endTime:
+            raise serializers.ValidationError(
+                'La hora inicial debe ser menor que la hora final.'
+            )
 
         return attrs
 
+
     def create(self, validatedData):
-        ministryIds = validatedData.pop('ministryIds', [])
+        return RecurringEvent.objects.create(**validatedData)
 
-        recurring = RecurringEvent.objects.create(**validatedData)
-
-        ministries = Ministry.objects.filter(id__in=ministryIds)
-
-        recurring.ministries.set(ministries)
-
-        return recurring
 
     def update(self, instance, validatedData):
-        ministryIds = validatedData.pop('ministryIds', None)
-
         for key, value in validatedData.items():
             setattr(instance, key, value)
 
         instance.save()
-
-        if ministryIds is not None:
-            ministries = Ministry.objects.filter(id__in=ministryIds)
-
-            instance.ministries.set(ministries)
 
         return instance
