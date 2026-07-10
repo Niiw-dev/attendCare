@@ -56,25 +56,6 @@ class EventViewSet(viewsets.ModelViewSet):
         })
 
 
-    @action(detail=True, methods=['post'])
-    def ministries(self, request, pk=None):
-
-        server = self.get_object()
-
-        ministryIds = request.data.get('ministryIds', [])
-
-        ServerMinistry.objects.filter(server=server).delete()
-
-        ministries = Ministry.objects.filter(id__in=ministryIds, isActive=True)
-
-        for ministry in ministries:
-
-            ServerMinistry.objects.create(server=server, ministry=ministry)
-
-        return Response({
-            'message': 'Ministerios actualizados'
-        })
-
 
 class EventTypeViewSet(viewsets.ModelViewSet):
     queryset = EventType.objects.all()
