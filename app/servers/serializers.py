@@ -1,3 +1,5 @@
+from django.contrib.auth.hashers import check_password
+
 from rest_framework import serializers
 
 from .models import Server, ServerMinistry
@@ -56,6 +58,14 @@ class ServerSerializer(serializers.ModelSerializer):
 
         if len(value) < 4:
             raise serializers.ValidationError('El PIN debe tener mínimo 4 caracteres')
+
+        servers = Server.objects.all()
+        if self.instance:
+            servers = servers.exclude(id=self.instance.id)
+
+        for server in servers:
+            if check_password(value, server.pin):
+                raise serializers.ValidationError('Este PIN ya está en uso por otro servidor')
 
         return value
 
