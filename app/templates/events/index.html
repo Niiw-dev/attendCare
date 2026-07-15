@@ -70,6 +70,7 @@
                 <label class="block text-xs font-medium text-gray-500 mb-1">Ministerios participantes</label>
                 <select id="ministriesSelect" multiple
                         class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    <option value="-1">Todos los ministerios</option>
                     <option v-for="m in ministries" :key="m.id" :value="m.id">
                         [[ m.name ]]
                     </option>
@@ -86,7 +87,10 @@
                         [[ s.firstName ]] [[ s.lastName ]]
                     </option>
                 </select>
-                <p v-if="filteredServers.length === 0 && selectedMinistryIds.length > 0" class="text-sm text-gray-400 italic mt-1">
+                <p v-if="selectedMinistryIds.length === 0" class="text-sm text-gray-400 italic mt-1">
+                    Seleccione ministerios participantes para ver los servidores disponibles
+                </p>
+                <p v-else-if="filteredServers.length === 0" class="text-sm text-gray-400 italic mt-1">
                     No hay servidores en los ministerios seleccionados
                 </p>
             </div>
@@ -138,16 +142,31 @@
         <table class="w-full">
             <thead class="bg-gray-50">
                 <tr>
-                    <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Nombre</th>
-                    <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Tipo</th>
-                    <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Estado</th>
-                    <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Inicio</th>
-                    <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Fin</th>
+                    <th @click="setSort('name')" class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none hover:text-gray-700">
+                        Nombre
+                        <i v-if="sortKey === 'name'" :class="sortDir === 'asc' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'" class="inline-block ml-1"></i>
+                    </th>
+                    <th @click="setSort('typeData.name')" class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none hover:text-gray-700">
+                        Tipo
+                        <i v-if="sortKey === 'typeData.name'" :class="sortDir === 'asc' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'" class="inline-block ml-1"></i>
+                    </th>
+                    <th @click="setSort('statusData.name')" class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none hover:text-gray-700">
+                        Estado
+                        <i v-if="sortKey === 'statusData.name'" :class="sortDir === 'asc' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'" class="inline-block ml-1"></i>
+                    </th>
+                    <th @click="setSort('startDate')" class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none hover:text-gray-700">
+                        Inicio
+                        <i v-if="sortKey === 'startDate'" :class="sortDir === 'asc' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'" class="inline-block ml-1"></i>
+                    </th>
+                    <th @click="setSort('endDate')" class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none hover:text-gray-700">
+                        Fin
+                        <i v-if="sortKey === 'endDate'" :class="sortDir === 'asc' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'" class="inline-block ml-1"></i>
+                    </th>
                     <th class="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Acciones</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
-                <tr v-for="event in events" :key="event.id" class="hover:bg-gray-50">
+                <tr v-for="event in sorted(events)" :key="event.id" class="hover:bg-gray-50">
                     <td class="px-4 py-3 text-sm font-medium text-gray-800">[[ event.name ]]</td>
                     <td class="px-4 py-3 text-sm text-gray-600">[[ event.typeData.name ]]</td>
                     <td class="px-4 py-3">
@@ -213,6 +232,8 @@ const pageData = {
     },
     selectedMinistryIds: [],
     selectedServerIds: [],
+    sortKey: '',
+    sortDir: 'asc',
     error: ''
 }
 </script>
@@ -273,7 +294,14 @@ const pageMethods = {
         $('#ministriesSelect')
             .select2({ width: '100%', placeholder: 'Seleccione ministerios' })
             .on('change', function () {
-                vm.selectedMinistryIds = $(this).val() ? $(this).val().map(Number) : []
+                const values = $(this).val() || []
+                let ids = values.map(Number)
+                if (ids.includes(-1)) {
+                    ids = vm.ministries.map(m => m.id)
+                    $(this).val(ids.map(String)).trigger('change')
+                    return
+                }
+                vm.selectedMinistryIds = ids
                 vm.$nextTick(() => vm.refreshServersSelect())
             })
         $('#ministriesSelect').val(vm.selectedMinistryIds).trigger('change')
@@ -281,11 +309,6 @@ const pageMethods = {
         if ($('#serversSelect').data('select2')) {
             $('#serversSelect').select2('destroy')
         }
-        $('#serversSelect')
-            .select2({ width: '100%', placeholder: 'Seleccione servidores' })
-            .on('change', function () {
-                vm.selectedServerIds = $(this).val() ? $(this).val().map(Number) : []
-            })
         this.refreshServersSelect()
     },
     refreshServersSelect() {
@@ -294,15 +317,30 @@ const pageMethods = {
         const prevVal = $sel.val() || []
         if ($sel.data('select2')) $sel.select2('destroy')
         $sel.empty()
+        const allOpt = new Option('Todos los servidores', '-1', false, prevVal.includes('-1'))
+        $sel.append(allOpt)
         this.filteredServers.forEach(s => {
             const opt = new Option(s.firstName + ' ' + s.lastName, s.id, false, prevVal.includes(String(s.id)))
             $sel.append(opt)
         })
         $sel.select2({ width: '100%', placeholder: 'Seleccione servidores' })
             .on('change', function () {
-                vm.selectedServerIds = $(this).val() ? $(this).val().map(Number) : []
+                const values = $(this).val() || []
+                let ids = values.map(Number)
+                if (ids.includes(-1)) {
+                    ids = vm.filteredServers.map(s => s.id)
+                    $(this).val(ids.map(String)).trigger('change')
+                    return
+                }
+                vm.selectedServerIds = ids
             })
         $sel.trigger('change')
+    },
+    toLocalDatetime(isoStr) {
+        if (!isoStr) return ''
+        const d = new Date(isoStr)
+        const pad = n => String(n).padStart(2, '0')
+        return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
     },
     editEvent(event) {
         this.showForm = true
@@ -312,8 +350,8 @@ const pageMethods = {
             type: event.type,
             status: event.status,
             leaderMinistry: event.leaderMinistry,
-            startDate: event.startDate ? event.startDate.substring(0, 16) : '',
-            endDate: event.endDate ? event.endDate.substring(0, 16) : '',
+            startDate: this.toLocalDatetime(event.startDate),
+            endDate: this.toLocalDatetime(event.endDate),
         }
         this.selectedMinistryIds = event.ministries ? event.ministries.map(m => m.id) : []
         this.selectedServerIds = event.assignments ? event.assignments.map(a => a.server) : []
@@ -340,12 +378,16 @@ const pageMethods = {
         this.selectedServerIds = []
     },
     async saveEvent() {
+        const toISO = (val) => {
+            if (!val) return val
+            return new Date(val).toISOString()
+        }
         const payload = {
             name: this.form.name,
             type: this.form.type,
             leaderMinistry: this.form.leaderMinistry,
-            startDate: this.form.startDate,
-            endDate: this.form.endDate,
+            startDate: toISO(this.form.startDate),
+            endDate: toISO(this.form.endDate),
             ministryIds: this.selectedMinistryIds,
             assignmentServerIds: this.selectedServerIds,
         }
@@ -362,6 +404,9 @@ const pageMethods = {
         if (!data) return
         this.showForm = false
         this.resetForm()
+        this.typeFilter = ''
+        this.statusFilter = ''
+        this.startDateFilter = ''
         await this.fetchEvents()
     },
     async deactivateEvent(event) {
@@ -371,6 +416,33 @@ const pageMethods = {
         })
         if (!data) return
         await this.fetchEvents()
+    },
+    setSort(key) {
+        if (this.sortKey === key) {
+            this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc'
+        } else {
+            this.sortKey = key
+            this.sortDir = 'asc'
+        }
+    },
+    sorted(arr) {
+        if (!this.sortKey || !arr) return arr
+        const sorted = [...arr]
+        sorted.sort((a, b) => {
+            let valA = this.getNestedValue(a, this.sortKey)
+            let valB = this.getNestedValue(b, this.sortKey)
+            if (valA == null) valA = ''
+            if (valB == null) valB = ''
+            if (typeof valA === 'string') valA = valA.toLowerCase()
+            if (typeof valB === 'string') valB = valB.toLowerCase()
+            if (valA < valB) return this.sortDir === 'asc' ? -1 : 1
+            if (valA > valB) return this.sortDir === 'asc' ? 1 : -1
+            return 0
+        })
+        return sorted
+    },
+    getNestedValue(obj, path) {
+        return path.split('.').reduce((o, p) => o ? o[p] : '', obj)
     },
     async onMounted() {
         await this.fetchServers()

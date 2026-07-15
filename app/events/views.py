@@ -321,7 +321,8 @@ class AuditLogViewSet(viewsets.ReadOnlyModelViewSet):
         for log in logs:
             expected_prev = prev_hash
             prev_hash_ok = log.previousHash == expected_prev
-            raw = f'{log.action}:{log.table}:{log.recordId}:{log.previousHash}:{log.timestamp.isoformat() if log.timestamp else ""}'
+            ts = log.timestamp.replace(microsecond=0).isoformat() if log.timestamp else ''
+            raw = f'{log.action}:{log.table}:{log.recordId}:{log.previousHash}:{ts}'
             expected_hash = hashlib.sha256(raw.encode()).hexdigest()
             hash_ok = log.currentHash == expected_hash
             if not (prev_hash_ok and hash_ok):

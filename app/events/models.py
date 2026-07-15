@@ -25,6 +25,7 @@ class EventStatus(models.Model):
         ('FINALIZADO', 'Finalizado'),
         ('RECONCILIADO', 'Reconciliado'),
         ('CANCELADO', 'Cancelado'),
+        ('INTEGRIDAD_VULNERADA', 'Integridad Vulnerada'),
     ]
 
     name = models.CharField(max_length=100)
@@ -211,6 +212,7 @@ class AuditLog(models.Model):
         import hashlib
         last = AuditLog.objects.order_by('-id').first()
         self.previousHash = last.currentHash if last else '0' * 64
-        raw = f'{self.action}:{self.table}:{self.recordId}:{self.previousHash}:{self.timestamp or timezone.now().isoformat()}'
+        ts = (self.timestamp or timezone.now()).replace(microsecond=0).isoformat()
+        raw = f'{self.action}:{self.table}:{self.recordId}:{self.previousHash}:{ts}'
         self.currentHash = hashlib.sha256(raw.encode()).hexdigest()
         super().save(*args, **kwargs)

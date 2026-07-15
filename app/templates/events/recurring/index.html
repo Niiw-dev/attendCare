@@ -76,16 +76,31 @@
         <table class="w-full">
             <thead class="bg-gray-50">
                 <tr>
-                    <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Nombre</th>
-                    <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Día</th>
-                    <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Inicio</th>
-                    <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Fin</th>
-                    <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Estado</th>
+                    <th @click="setSort('name')" class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none hover:text-gray-700">
+                        Nombre
+                        <i v-if="sortKey === 'name'" :class="sortDir === 'asc' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'" class="inline-block ml-1"></i>
+                    </th>
+                    <th @click="setSort('weekday')" class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none hover:text-gray-700">
+                        Día
+                        <i v-if="sortKey === 'weekday'" :class="sortDir === 'asc' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'" class="inline-block ml-1"></i>
+                    </th>
+                    <th @click="setSort('startTime')" class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none hover:text-gray-700">
+                        Inicio
+                        <i v-if="sortKey === 'startTime'" :class="sortDir === 'asc' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'" class="inline-block ml-1"></i>
+                    </th>
+                    <th @click="setSort('endTime')" class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none hover:text-gray-700">
+                        Fin
+                        <i v-if="sortKey === 'endTime'" :class="sortDir === 'asc' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'" class="inline-block ml-1"></i>
+                    </th>
+                    <th @click="setSort('isActive')" class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none hover:text-gray-700">
+                        Estado
+                        <i v-if="sortKey === 'isActive'" :class="sortDir === 'asc' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'" class="inline-block ml-1"></i>
+                    </th>
                     <th class="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Acciones</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
-                <tr v-for="event in recurringEvents" :key="event.id" class="hover:bg-gray-50">
+                <tr v-for="event in sorted(recurringEvents)" :key="event.id" class="hover:bg-gray-50">
                     <td class="px-4 py-3 text-sm font-medium text-gray-800">[[ event.name ]]</td>
                     <td class="px-4 py-3 text-sm text-gray-600">[[ weekdayName(event.weekday) ]]</td>
                     <td class="px-4 py-3 text-sm text-gray-600">[[ event.startTime ]]</td>
@@ -141,6 +156,8 @@ const pageData = {
         eventType: null,
         status: null
     },
+    sortKey: '',
+    sortDir: 'asc',
     error: ''
 }
 </script>
@@ -199,7 +216,34 @@ const pageMethods = {
     },
     resetForm() {
         this.form = { id: null, name: '', weekday: '', startTime: '', endTime: '', eventType: null, status: null }
-    }
+    },
+    setSort(key) {
+        if (this.sortKey === key) {
+            this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc'
+        } else {
+            this.sortKey = key
+            this.sortDir = 'asc'
+        }
+    },
+    sorted(arr) {
+        if (!this.sortKey || !arr) return arr
+        const sorted = [...arr]
+        sorted.sort((a, b) => {
+            let valA = this.getNestedValue(a, this.sortKey)
+            let valB = this.getNestedValue(b, this.sortKey)
+            if (valA == null) valA = ''
+            if (valB == null) valB = ''
+            if (typeof valA === 'string') valA = valA.toLowerCase()
+            if (typeof valB === 'string') valB = valB.toLowerCase()
+            if (valA < valB) return this.sortDir === 'asc' ? -1 : 1
+            if (valA > valB) return this.sortDir === 'asc' ? 1 : -1
+            return 0
+        })
+        return sorted
+    },
+    getNestedValue(obj, path) {
+        return path.split('.').reduce((o, p) => o ? o[p] : '', obj)
+    },
 }
 </script>
 {% endblock %}

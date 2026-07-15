@@ -21,7 +21,7 @@ class EventSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'type', 'typeData', 'status', 'statusData', 'startDate',
                   'endDate', 'leaderMinistry', 'leaderMinistryData', 'ministries', 'ministryIds',
                   'assignmentServerIds', 'assignments', 'createdBy', 'createdAt', 'assignmentCount']
-        read_only_fields = ['createdBy', 'createdAt', 'assignmentCount', 'assignments']
+        read_only_fields = ['createdBy', 'createdAt', 'assignmentCount', 'assignments', 'status']
 
     def get_typeData(self, obj):
         return {'id': obj.type.id, 'name': obj.type.name}

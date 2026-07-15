@@ -56,8 +56,8 @@ class ServerSerializer(serializers.ModelSerializer):
 
     def validate_pin(self, value):
 
-        if len(value) < 4:
-            raise serializers.ValidationError('El PIN debe tener mínimo 4 caracteres')
+        if not value.isdigit() or len(value) != 5:
+            raise serializers.ValidationError('El PIN debe tener exactamente 5 dígitos')
 
         servers = Server.objects.all()
         if self.instance:
