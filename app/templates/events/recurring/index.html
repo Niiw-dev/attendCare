@@ -1,9 +1,10 @@
 {% extends 'base.html' %}
 {% block title %}Eventos Recurrentes{% endblock %}
-
-{% block content %}
+{% block json_data %}
 {{ recurringEventsJson|json_script:"recurringEvents" }}
 {{ eventTypesJson|json_script:"eventTypes" }}
+{% endblock %}
+{% block content %}
 
 <div>
     <div class="flex justify-between items-center mb-6">

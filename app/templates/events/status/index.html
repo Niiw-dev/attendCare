@@ -3,9 +3,10 @@
 {% block title %}
 Estados de Evento
 {% endblock %}
-
-{% block content %}
+{% block json_data %}
 {{ eventStatusJson|json_script:"eventStatus" }}
+{% endblock %}
+{% block content %}
 <div>
 
     <h1>

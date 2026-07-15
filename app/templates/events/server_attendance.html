@@ -1,8 +1,9 @@
 {% extends 'base.html' %}
 {% block title %}Historial de Asistencia{% endblock %}
-
-{% block content %}
+{% block json_data %}
 {{ serverJson|json_script:"server-data" }}
+{% endblock %}
+{% block content %}
 
 <div>
     <div class="flex items-center gap-3 mb-6">

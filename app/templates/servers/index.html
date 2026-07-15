@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
 {% block title %}Servidores{% endblock %}
-
-{% block content %}
-
+{% block json_data %}
 {{ serversJson|json_script:"servers-data" }}
 {{ ministriesJson|json_script:"ministries-data" }}
+{% endblock %}
+{% block content %}
 
 <div>
     <div class="flex justify-between items-center mb-6">
@@ -274,24 +274,6 @@ const pageMethods = {
 }
 </script>
 
-<script>
-document.addEventListener('DOMContentLoaded', function serversInit() {
-    function init() {
-        const $sel = $('#serversMinistriesSelect')
-        if (!$sel.length || typeof $ === 'undefined' || typeof $.fn.select2 === 'undefined') {
-            setTimeout(init, 100)
-            return
-        }
-        if ($sel.data('select2')) $sel.select2('destroy')
-        $sel.select2({ width: '100%', placeholder: 'Selecciona ministerios' })
-            .on('change', function () {
-                const vm = document.querySelector('#app').__vue_app__._instance.proxy
-                vm.form.ministryIds = $(this).val() ? $(this).val().map(Number) : []
-            })
-    }
-    setTimeout(init, 300)
-})
-</script>
 {% endblock %}
 
 {% block vueComputed %}

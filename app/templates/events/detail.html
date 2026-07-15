@@ -1,12 +1,13 @@
 {% extends 'base.html' %}
 {% block title %}Detalle del Evento{% endblock %}
-
-{% block content %}
+{% block json_data %}
 {{ eventJson|json_script:"event-data" }}
 {{ assignmentsJson|json_script:"assignments-data" }}
 {{ ministriesJson|json_script:"ministries-data" }}
 {{ attendancesJson|json_script:"attendances-data" }}
 {{ reconciliationJson|json_script:"reconciliation-data" }}
+{% endblock %}
+{% block content %}
 
 <div class="max-w-5xl mx-auto">
     <!-- Header -->

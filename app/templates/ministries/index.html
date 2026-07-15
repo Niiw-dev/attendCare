@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
 {% block title %}Ministerios{% endblock %}
-
-{% block content %}
-
+{% block json_data %}
 {{ ministriesJson|json_script:"ministries-data" }}
 {{ leadersJson|json_script:"leaders-data" }}
+{% endblock %}
+{% block content %}
 
 <div>
     <div class="flex justify-between items-center mb-6">

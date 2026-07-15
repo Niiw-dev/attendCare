@@ -100,7 +100,10 @@ const pageData = {
     ministries: [],
     servers: [],
     events: [],
-    activeStatusId: null,
+    programados: [],
+    activos: [],
+    programadoStatusId: null,
+    activoStatusId: null,
     error: ''
 }
 </script>
@@ -116,12 +119,13 @@ const pageComputed = {
         return this.servers.length
     },
     activeEvents() {
-        return this.events.length
+        return this.programados.length + this.activos.length
     },
     eventsToday() {
-        if (!this.events || this.events.length === 0) return []
+        const all = [...this.programados, ...this.activos]
+        if (!all.length) return []
         const today = new Date().toISOString().split('T')[0]
-        return this.events.filter(e => e.startDate && e.startDate.substring(0, 10) === today)
+        return all.filter(e => e.startDate && e.startDate.substring(0, 10) === today)
     },
     todayEventsCount() {
         return this.eventsToday.length
@@ -141,27 +145,35 @@ const pageMethods = {
         })
     },
     async onMounted() {
-        const statuses = await this.apiRequest('/api/eventStatuses/')
+        const statuses = await this.apiRequest('/api/status/')
         if (statuses) {
-            const active = statuses.find(s => s.name === 'ACTIVO')
-            if (active) this.activeStatusId = active.id
+            const programado = statuses.find(s => s.code === 'PROGRAMADO')
+            const activo = statuses.find(s => s.code === 'ACTIVO')
+            if (programado) this.programadoStatusId = programado.id
+            if (activo) this.activoStatusId = activo.id
         }
 
         const promises = [
             this.apiRequest('/api/ministries/?isActive=true'),
             this.apiRequest('/api/servers/?isActive=true'),
         ]
-
-        if (this.activeStatusId) {
-            promises.push(this.apiRequest(`/api/events/?status=${this.activeStatusId}`))
-        } else {
-            promises.push(Promise.resolve([]))
+        if (this.programadoStatusId) {
+            promises.push(this.apiRequest(`/api/events/?status=${this.programadoStatusId}`))
+        }
+        if (this.activoStatusId) {
+            promises.push(this.apiRequest(`/api/events/?status=${this.activoStatusId}`))
         }
 
-        const [ministries, servers, events] = await Promise.all(promises)
+        const results = await Promise.all(promises)
+        const ministries = results[0]
+        const servers = results[1]
+        const programados = results[2] || []
+        const activos = results[3] || []
         if (ministries) this.ministries = ministries
         if (servers) this.servers = servers
-        if (events) this.events = events
+        this.programados = programados
+        this.activos = activos
+        this.events = [...programados, ...activos]
     }
 }
 </script>

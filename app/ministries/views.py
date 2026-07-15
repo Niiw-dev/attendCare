@@ -8,7 +8,7 @@ from rest_framework.permissions import IsAuthenticated
 from .models import Ministry
 from .serializers import MinistrySerializer
 
-from users.permissions import IsPastor
+from users.permissions import IsPastorOrReadOnly
 
 
 def ministriesView(request):
@@ -32,7 +32,7 @@ class MinistryViewSet(viewsets.ModelViewSet):
 
     serializer_class = MinistrySerializer
 
-    permission_classes = [IsAuthenticated,IsPastor]
+    permission_classes = [IsAuthenticated, IsPastorOrReadOnly]
 
 
     def get_queryset(self):

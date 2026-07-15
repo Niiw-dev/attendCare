@@ -7,7 +7,7 @@
 
     <link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <script src="https://unpkg.com/vue@3"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
@@ -23,6 +23,8 @@
 </head>
 
 <body class="bg-gray-50 font-sans antialiased">
+
+{% block json_data %}{% endblock %}
 
 <div id="app">
     <div class="flex h-screen overflow-hidden">
@@ -266,8 +268,28 @@ const baseComputed = {
 
 createApp({
     delimiters: ['[[', ']]'],
-    data() { return baseData },
-    methods: baseMethods,
+    data() {
+        return {
+            ...baseData,
+            inactivityTimer: null,
+            INACTIVITY_LIMIT: 15 * 60 * 1000,
+        }
+    },
+    methods: {
+        ...baseMethods,
+        startInactivityTimer() {
+            clearTimeout(this.inactivityTimer)
+            this.inactivityTimer = setTimeout(() => {
+                localStorage.clear()
+                window.location.href = '/login/'
+            }, this.INACTIVITY_LIMIT)
+        },
+        trackActivity() {
+            const events = ['click', 'keydown', 'mousemove', 'touchstart', 'scroll']
+            const reset = () => this.startInactivityTimer()
+            events.forEach(ev => document.addEventListener(ev, reset))
+        }
+    },
     computed: baseComputed,
     mounted() {
         this.checkAuth()
@@ -275,24 +297,6 @@ createApp({
         this.trackActivity()
         if (typeof this.onMounted === 'function') this.onMounted()
     },
-
-    // Inactividad: cierra sesión tras 15 min sin actividad
-    inactivityTimer: null,
-    INACTIVITY_LIMIT: 15 * 60 * 1000,
-
-    startInactivityTimer() {
-        clearTimeout(this.inactivityTimer)
-        this.inactivityTimer = setTimeout(() => {
-            localStorage.clear()
-            window.location.href = '/login/'
-        }, this.INACTIVITY_LIMIT)
-    },
-
-    trackActivity() {
-        const events = ['click', 'keydown', 'mousemove', 'touchstart', 'scroll']
-        const reset = () => this.startInactivityTimer()
-        events.forEach(ev => document.addEventListener(ev, reset))
-    }
 }).mount('#app')
 </script>
 

@@ -20,13 +20,13 @@ from ministries.models import Ministry
 from ministries.serializers import MinistrySerializer
 from servers.models import Server
 from servers.serializers import ServerSerializer
-from users.permissions import IsPastor
+from users.permissions import IsPastor, IsPastorOrReadOnly
 
 
 class EventViewSet(viewsets.ModelViewSet):
     queryset = Event.objects.all()
     serializer_class = EventSerializer
-    permission_classes = [IsAuthenticated, IsPastor]
+    permission_classes = [IsAuthenticated, IsPastorOrReadOnly]
 
     def get_queryset(self):
         queryset = Event.objects.select_related('type', 'status', 'leaderMinistry').prefetch_related('ministries')
@@ -167,7 +167,7 @@ class EventViewSet(viewsets.ModelViewSet):
 class EventTypeViewSet(viewsets.ModelViewSet):
     queryset = EventType.objects.all()
     serializer_class = EventTypeSerializer
-    permission_classes = [IsAuthenticated, IsPastor]
+    permission_classes = [IsAuthenticated, IsPastorOrReadOnly]
 
     def get_queryset(self):
         isActive = self.request.query_params.get('isActive')
@@ -193,14 +193,14 @@ class EventTypeViewSet(viewsets.ModelViewSet):
 class EventStatusViewSet(viewsets.ModelViewSet):
     queryset = EventStatus.objects.filter(isActive=True)
     serializer_class = EventStatusSerializer
-    permission_classes = [IsAuthenticated, IsPastor]
+    permission_classes = [IsAuthenticated]
+
 
     def get_queryset(self):
         isActive = self.request.query_params.get('isActive')
         if isActive is None:
             return EventStatus.objects.all()
         return EventStatus.objects.filter(isActive=isActive == 'true')
-
     @action(detail=True, methods=['patch'])
     def deactivate(self, request, pk=None):
         obj = self.get_object()
@@ -219,7 +219,7 @@ class EventStatusViewSet(viewsets.ModelViewSet):
 class AssignmentViewSet(viewsets.ModelViewSet):
     queryset = Assignment.objects.all()
     serializer_class = AssignmentSerializer
-    permission_classes = [IsAuthenticated, IsPastor]
+    permission_classes = [IsAuthenticated, IsPastorOrReadOnly]
 
     def get_queryset(self):
         qs = Assignment.objects.select_related('server', 'ministry', 'event')

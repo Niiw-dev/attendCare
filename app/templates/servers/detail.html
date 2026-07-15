@@ -1,10 +1,10 @@
 {% extends 'base.html' %}
 {% block title %}Detalle del servidor{% endblock %}
-
-{% block content %}
-
+{% block json_data %}
 {{ serverJson|json_script:"server-data" }}
 {{ serverMinistriesJson|json_script:"server-ministries-data" }}
+{% endblock %}
+{% block content %}
 
 <div>
     <div class="flex items-center gap-3 mb-6">

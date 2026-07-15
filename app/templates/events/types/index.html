@@ -1,8 +1,9 @@
 {% extends 'base.html' %}
 {% block title %}Tipos de Evento{% endblock %}
-
-{% block content %}
+{% block json_data %}
 {{ eventTypesJson|json_script:"eventTypes" }}
+{% endblock %}
+{% block content %}
 
 <div>
     <div class="flex justify-between items-center mb-6">

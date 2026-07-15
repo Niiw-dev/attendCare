@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 {% block title %}Usuarios{% endblock %}
-
-{% block content %}
-
+{% block json_data %}
 {{ usuariosJson|json_script:"usuariosData" }}
+{% endblock %}
+{% block content %}
 
 <div>
     <div class="flex justify-between items-center mb-6">
