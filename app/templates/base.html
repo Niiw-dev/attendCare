@@ -2,79 +2,154 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>{% block title %}{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}AttendCare{% endblock %}</title>
 
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" 
-            rel="stylesheet" />
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"
-            rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" 
-            rel="stylesheet" />
-
+    <link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <script src="https://unpkg.com/vue@3"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <style>
+        [x-cloak] { display: none !important; }
+        .sidebar-link { transition: all 0.2s; }
+        .sidebar-link:hover { background: rgba(59, 130, 246, 0.1); }
+        .sidebar-link.active { background: rgba(59, 130, 246, 0.15); border-right: 3px solid #3b82f6; }
+        .card { transition: box-shadow 0.2s; }
+        .card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    </style>
 </head>
 
-<body class="bg-gray-100">
+<body class="bg-gray-50 font-sans antialiased">
 
 <div id="app">
-    <nav class="bg-white shadow-md px-6 py-4 flex justify-between items-center">
-        <div class="font-bold text-lg">
-            AttendCare
-        </div>
+    <div class="flex h-screen overflow-hidden">
 
-        <div class="flex gap-4 items-center">
-            <a href="/dashboard/" class="text-gray-700 hover:text-blue-600">
-                Dashboard
-            </a>
+        {% if not kiosko_mode %}
+        <!-- Sidebar -->
+        <aside class="w-64 bg-white border-r border-gray-200 flex flex-col flex-shrink-0">
+            <div class="h-16 flex items-center px-6 border-b border-gray-100">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                        <i class="ti ti-church text-white text-sm"></i>
+                    </div>
+                    <span class="font-bold text-lg text-gray-800">AttendCare</span>
+                </div>
+            </div>
 
-            <a v-if="user.role === 'PASTOR'" href="/usuarios/" 
-                class="text-gray-700 hover:text-blue-600">
-                Usuarios
-            </a>
+            <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+                <a href="/dashboard/" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-700 hover:text-blue-600"
+                   :class="{'active text-blue-600 bg-blue-50': activeMenu === 'dashboard'}">
+                    <i class="ti ti-dashboard text-lg"></i>
+                    <span>Dashboard</span>
+                </a>
 
-            <a href="/ministries/" class="text-gray-700 hover:text-blue-600">
-                Ministerios
-            </a>
+                <div class="pt-3 pb-1">
+                    <p class="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Gestión</p>
+                </div>
 
-            <a href="/servers/" class="text-gray-700 hover:text-blue-600">
-                Servidores
-            </a>
+                <a v-if="user.role === 'PASTOR'" href="/usuarios/"
+                   class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-700 hover:text-blue-600"
+                   :class="{'active text-blue-600 bg-blue-50': activeMenu === 'usuarios'}">
+                    <i class="ti ti-users text-lg"></i>
+                    <span>Usuarios</span>
+                </a>
 
-            <a href="/events/view/" class="text-gray-700 hover:text-blue-600">
-                Eventos
-            </a>
+                <a href="/ministries/"
+                   class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-700 hover:text-blue-600"
+                   :class="{'active text-blue-600 bg-blue-50': activeMenu === 'ministries'}">
+                    <i class="ti ti-building-community text-lg"></i>
+                    <span>Ministerios</span>
+                </a>
 
-            <a href="/events/types/view/" class="text-gray-700 hover:text-blue-600">
-                Tipos de Eventos
-            </a>
+                <a href="/servers/"
+                   class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-700 hover:text-blue-600"
+                   :class="{'active text-blue-600 bg-blue-50': activeMenu === 'servers'}">
+                    <i class="ti ti-users-group text-lg"></i>
+                    <span>Servidores</span>
+                </a>
 
-            <a href="/events/statuses/view/" class="text-gray-700 hover:text-blue-600">
-                Estados de Eventos
-            </a>
+                <a href="/events/view/"
+                   class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-700 hover:text-blue-600"
+                   :class="{'active text-blue-600 bg-blue-50': activeMenu === 'events'}">
+                    <i class="ti ti-calendar-event text-lg"></i>
+                    <span>Eventos</span>
+                </a>
 
-            <a href="/events/recurring/view/" class="text-gray-700 hover:text-blue-600">
-                Eventos Recurrentes
-            </a>
-        </div>
+                <div class="pt-3 pb-1">
+                    <p class="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Configuración</p>
+                </div>
 
-        <div class="flex items-center gap-4">
-            <span class="text-sm text-gray-600">
-                [[ user.username ]] ([[ user.role ]])
-            </span>
+                <a href="/events/types/view/"
+                   class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-700 hover:text-blue-600"
+                   :class="{'active text-blue-600 bg-blue-50': activeMenu === 'types'}">
+                    <i class="ti ti-category text-lg"></i>
+                    <span>Tipos de evento</span>
+                </a>
 
-            <button @click="logout" 
-                    class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600">
-                Logout
-            </button>
-        </div>
-    </nav>
+                <a href="/events/recurring/view/"
+                   class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-700 hover:text-blue-600"
+                   :class="{'active text-blue-600 bg-blue-50': activeMenu === 'recurring'}">
+                    <i class="ti ti-repeat text-lg"></i>
+                    <span>Eventos recurrentes</span>
+                </a>
 
-    <main class="p-6">
-        {% block content %}{% endblock %}
-    </main>
+                <div class="pt-3 pb-1">
+                    <p class="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Reportes</p>
+                </div>
+
+                <a href="/events/reports/"
+                   class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-700 hover:text-blue-600"
+                   :class="{'active text-blue-600 bg-blue-50': activeMenu === 'reports'}">
+                    <i class="ti ti-chart-bar text-lg"></i>
+                    <span>Reportes</span>
+                </a>
+
+                <a v-if="user.role === 'PASTOR'" href="/audit/"
+                   class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-700 hover:text-blue-600"
+                   :class="{'active text-blue-600 bg-blue-50': activeMenu === 'audit'}">
+                    <i class="ti ti-shield-lock text-lg"></i>
+                    <span>Auditoría</span>
+                </a>
+
+                <a href="/kiosko/" target="_blank"
+                   class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-700 hover:text-blue-600">
+                    <i class="ti ti-device-tablet text-lg"></i>
+                    <span>Kiosko</span>
+                </a>
+            </nav>
+
+            <div class="border-t border-gray-100 p-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span class="text-sm font-semibold text-blue-600">[[ user.username ? user.username[0].toUpperCase() : 'U' ]]</span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-gray-800 truncate">[[ user.username ]]</p>
+                        <p class="text-xs text-gray-500">[[ user.role === 'PASTOR' ? 'Pastor' : 'Líder' ]]</p>
+                    </div>
+                    <button @click="logout" class="p-2 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50" title="Cerrar sesión">
+                        <i class="ti ti-logout text-lg"></i>
+                    </button>
+                </div>
+            </div>
+        </aside>
+        {% endif %}
+
+        <!-- Main Content -->
+        <main class="flex-1 overflow-y-auto bg-gray-50">
+            {% if not kiosko_mode %}
+            <div class="px-8 py-6">
+            {% endif %}
+                {% block content %}{% endblock %}
+            {% if not kiosko_mode %}
+            </div>
+            {% endif %}
+        </main>
+
+    </div>
 </div>
 
 {% block vueData %}{% endblock %}
@@ -87,18 +162,15 @@ const { createApp } = Vue
 const baseData = {
     user: {},
     error: '',
-    ...( typeof pageData !== 'undefined' ? pageData : {} )
+    success: '',
+    activeMenu: '{{ active_menu|default:"" }}',
+    ...(typeof pageData !== 'undefined' ? pageData : {})
 }
 
 const baseMethods = {
-
     async checkAuth() {
         const token = localStorage.getItem('access')
-
-        if (!token) {
-            window.location.href = '/login/'
-            return
-        }
+        if (!token) { window.location.href = '/login/'; return }
 
         const res = await fetch('/api/auth/me/', {
             headers: { 'Authorization': 'Bearer ' + token }
@@ -120,111 +192,76 @@ const baseMethods = {
 
     async refreshToken() {
         const refresh = localStorage.getItem('refresh')
-
         const res = await fetch('/api/auth/refresh/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ refresh })
         })
 
-        if (!res.ok) {
-            localStorage.clear()
-            window.location.href = '/login/'
-            return null
-        }
+        if (!res.ok) { localStorage.clear(); window.location.href = '/login/'; return null }
 
         const data = await res.json()
         localStorage.setItem('access', data.access)
-
         return data.access
     },
 
     getCookie(name) {
         let cookieValue = null
-
         if (document.cookie && document.cookie !== '') {
-
             const cookies = document.cookie.split(';')
-
             for (let cookie of cookies) {
-
                 cookie = cookie.trim()
-
                 if (cookie.startsWith(name + '=')) {
-                    cookieValue = decodeURIComponent(
-                        cookie.substring(name.length + 1)
-                    )
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1))
                     break
                 }
             }
         }
-
         return cookieValue
     },
 
     async apiRequest(url, options = {}) {
         const token = localStorage.getItem('access')
-
         const config = {
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': 'Bearer ' + token,
-                "X-CSRFToken":  this.getCookie('csrftoken'),
+                'X-CSRFToken': this.getCookie('csrftoken'),
             },
             ...options
         }
 
         const res = await fetch(url, config)
-
         let data = {}
         try { data = await res.json() } catch (e) {}
 
-        if (res.status === 401) {
-            localStorage.clear()
-            window.location.href = '/login/'
-            return null
-        }
-
-        if (res.status === 403) {
-            this.error = "No tienes permisos para esta acción"
-            return null
-        }
+        if (res.status === 401) { localStorage.clear(); window.location.href = '/login/'; return null }
+        if (res.status === 403) { this.error = 'No tienes permisos para esta acci\u00f3n'; return null }
 
         if (!res.ok) {
-            this.error = this.formatErrors(data)
+            if (typeof data === 'object' && data !== null) {
+                const mensajes = []
+                for (const campo in data) {
+                    const valor = data[campo]
+                    if (Array.isArray(valor)) mensajes.push(`${campo}: ${valor.join(', ')}`)
+                    else if (typeof valor === 'string') mensajes.push(`${campo}: ${valor}`)
+                }
+                this.error = mensajes.join('\n') || data.detail || 'Error en la solicitud'
+            } else {
+                this.error = data || 'Error en la solicitud'
+            }
             return null
         }
 
-        this.error = ""
+        this.error = ''
         return data
     },
 
-    formatErrors(errors) {
-        if (errors.detail) return errors.detail
-
-        let mensajes = []
-
-        for (let campo in errors) {
-            const valor = errors[campo]
-
-            if (Array.isArray(valor)) {
-                mensajes.push(`${campo}: ${valor.join(', ')}`)
-            } else if (typeof valor === 'string') {
-                mensajes.push(`${campo}: ${valor}`)
-            }
-        }
-
-        return mensajes.join('\n')
-    },
-
-    ...( typeof pageMethods !== 'undefined' ? pageMethods : {} )
+    ...(typeof pageMethods !== 'undefined' ? pageMethods : {})
 }
 
 const baseComputed = {
-    ...( typeof pageComputed !== 'undefined'
-        ? pageComputed
-        : {}
-    )
+    ...(typeof pageComputed !== 'undefined' ? pageComputed : {})
 }
 
 createApp({
@@ -234,13 +271,30 @@ createApp({
     computed: baseComputed,
     mounted() {
         this.checkAuth()
+        this.startInactivityTimer()
+        this.trackActivity()
         if (typeof this.onMounted === 'function') this.onMounted()
+    },
+
+    // Inactividad: cierra sesión tras 15 min sin actividad
+    inactivityTimer: null,
+    INACTIVITY_LIMIT: 15 * 60 * 1000,
+
+    startInactivityTimer() {
+        clearTimeout(this.inactivityTimer)
+        this.inactivityTimer = setTimeout(() => {
+            localStorage.clear()
+            window.location.href = '/login/'
+        }, this.INACTIVITY_LIMIT)
+    },
+
+    trackActivity() {
+        const events = ['click', 'keydown', 'mousemove', 'touchstart', 'scroll']
+        const reset = () => this.startInactivityTimer()
+        events.forEach(ev => document.addEventListener(ev, reset))
     }
 }).mount('#app')
 </script>
-<script src="https://unpkg.com/lucide@latest"></script>
-<script>
-  lucide.createIcons();
-</script>
+
 </body>
 </html>

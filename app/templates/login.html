@@ -1,73 +1,104 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-    <title>Login</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AttendCare — Iniciar sesión</title>
     <script src="https://unpkg.com/vue@3"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" rel="stylesheet" />
 </head>
-<body>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen flex items-center justify-center p-4">
 
 <div id="app">
-    <h2>Login</h2>
+    <div class="w-full max-w-md">
+        <div class="text-center mb-8">
+            <div class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-200">
+                <i class="ti ti-church text-white text-3xl"></i>
+            </div>
+            <h1 class="text-2xl font-bold text-gray-800">AttendCare</h1>
+            <p class="text-gray-500 mt-1">Sistema de Registro Ministerial</p>
+        </div>
 
-    <form @submit.prevent="login">
-        <input type="text" v-model="username" placeholder="Usuario" autocomplete="username">
-        <input type="password" v-model="password" placeholder="Contraseña" 
-                autocomplete="current-password">
+        <div class="bg-white rounded-2xl shadow-xl shadow-gray-200/50 p-8">
+            <h2 class="text-lg font-semibold text-gray-800 mb-6">Iniciar sesión</h2>
 
-        <button>Ingresar</button>
-    </form>
+            <div v-if="error" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600 flex items-center gap-2">
+                <i class="ti ti-alert-circle"></i>
+                <span>[[ error ]]</span>
+            </div>
 
-    <p>{{ error }}</p>
+            <form @submit.prevent="login" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Usuario</label>
+                    <input type="text" v-model="form.username"
+                           class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                           placeholder="Ingrese su usuario">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+                    <input type="password" v-model="form.password"
+                           class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                           placeholder="Ingrese su contraseña">
+                </div>
+
+                <button type="submit" :disabled="loading"
+                        class="w-full bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50 flex items-center justify-center gap-2">
+                    <i v-if="loading" class="ti ti-loader animate-spin"></i>
+                    <span>[[ loading ? 'Ingresando...' : 'Ingresar' ]]</span>
+                </button>
+            </form>
+
+            <div class="mt-6 pt-4 border-t border-gray-100">
+                <a href="/kiosko/"
+                   class="w-full flex items-center justify-center gap-2 px-4 py-2.5 border-2 border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50 transition">
+                    <i class="ti ti-device-tablet text-lg"></i>
+                    <span>Modo Kiosko</span>
+                </a>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
 const { createApp } = Vue
 
 createApp({
+    delimiters: ['[[', ']]'],
     data() {
         return {
-            username: '',
-            password: '',
-            error: ''
+            form: { username: '', password: '' },
+            error: '',
+            loading: false
         }
     },
     methods: {
         async login() {
-            this.error = ""
-
-            if (!this.username || !this.password) {
-                this.error = "Campos requeridos"
-                return
-            }
+            this.error = ''
+            this.loading = true
 
             try {
                 const res = await fetch('/api/auth/login/', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        username: this.username,
-                        password: this.password
-                    })
+                    body: JSON.stringify(this.form)
                 })
-
-                if (!res.ok) {
-                    if (res.status === 401) {
-                        this.error = "Credenciales incorrectas"
-                    } else if (res.status >= 500) {
-                        this.error = "Error del servidor"
-                    }
-                    return;
-                }
 
                 const data = await res.json()
 
+                if (!res.ok) {
+                    this.error = data.detail || 'Credenciales incorrectas'
+                    this.loading = false
+                    return
+                }
+
                 localStorage.setItem('access', data.access)
                 localStorage.setItem('refresh', data.refresh)
-
                 window.location.href = '/dashboard/'
-
             } catch (e) {
-                this.error = "Error del servidor"
+                this.error = 'Error de conexión'
+                this.loading = false
             }
         }
     }

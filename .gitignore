@@ -13,4 +13,7 @@ __pycache__/
 # Logs
 *.log
 
+# Session
+SESSION_LOG.md
+
 static/

@@ -60,8 +60,6 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'events.middleware.AutoGenerateEventsMiddleware',
-    
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True  # dev
@@ -162,6 +160,26 @@ CSRF_TRUSTED_ORIGINS = [
 
 STATIC_URL = '/static/'
 STATIC_ROOT = '/app/static'
+# Celery
+CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://redis:6379/0')
+CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://redis:6379/0')
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'UTC'
+
+from celery.schedules import crontab
+CELERY_BEAT_SCHEDULE = {
+    'update-event-statuses': {
+        'task': 'events.tasks.update_event_statuses',
+        'schedule': crontab(minute='*'),
+    },
+    'generate-recurring-events': {
+        'task': 'events.tasks.generate_recurring_events',
+        'schedule': crontab(hour='*', minute='0'),
+    },
+}
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 

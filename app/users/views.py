@@ -44,11 +44,14 @@ def dashboardView(request):
 @permission_classes([IsAuthenticated])
 def me(request):
     user = request.user
-
+    from ministries.models import Ministry
+    from ministries.serializers import MinistrySerializer
+    my_ministry = Ministry.objects.filter(leaderAssigned=user).first()
     return Response({
         "id": user.id,
         "username": user.username,
-        "role": user.role
+        "role": user.role,
+        "myMinistry": MinistrySerializer(my_ministry).data if my_ministry else None,
     })
 
 

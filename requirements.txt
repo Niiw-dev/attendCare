@@ -6,3 +6,6 @@ djangorestframework
 django-cors-headers
 djangorestframework-simplejwt
 djangorestframework-simplejwt[blacklist]
+celery[redis]
+redis
+django-extensions

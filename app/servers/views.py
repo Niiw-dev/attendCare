@@ -11,18 +11,39 @@ from .serializers import ServerSerializer
 from ministries.models import Ministry
 
 from users.permissions import IsPastor
+from rest_framework.permissions import IsAuthenticated
 
 
 def serversView(request):
+    from ministries.serializers import MinistrySerializer
+    from ministries.models import Ministry
 
     servers = Server.objects.prefetch_related('ministries')
     serversData = ServerSerializer(servers, many=True).data
-    print(serversData)
-    return render(request, 'servers/index.html',
-        {
-            'serversJson': serversData
-        }
-    )
+    return render(request, 'servers/index.html', {
+        'serversJson': serversData,
+        'ministriesJson': MinistrySerializer(Ministry.objects.filter(isActive=True), many=True).data,
+    })
+
+
+def serverDetailView(request, serverId):
+
+    server = Server.objects.prefetch_related('ministries').get(id=serverId)
+
+    serverMinistries = ServerMinistry.objects.filter(server=server).select_related('ministry')
+
+    return render(request, 'servers/detail.html', {
+        'serverJson': ServerSerializer(server).data,
+        'serverMinistriesJson': [
+            {
+                'id': sm.ministry.id,
+                'name': sm.ministry.name,
+                'joinedAt': sm.joinedAt.isoformat(),
+                'isActive': sm.ministry.isActive,
+            }
+            for sm in serverMinistries
+        ],
+    })
 
 
 
@@ -32,20 +53,26 @@ class ServerViewSet(viewsets.ModelViewSet):
 
     serializer_class = ServerSerializer
 
-    permission_classes = [IsAuthenticated, IsPastor]
+    permission_classes = [IsAuthenticated]
 
 
     def get_queryset(self):
-
         queryset = Server.objects.all()
-
+        user = self.request.user
         ministryId = self.request.query_params.get('ministryId')
-
         isActive = self.request.query_params.get('isActive')
-        print(ministryId)
+
+        # LIDER solo ve servidores de su ministerio
+        if user.role == 'LIDER':
+            from ministries.models import Ministry
+            my_ministry = Ministry.objects.filter(leaderAssigned=user).first()
+            if my_ministry:
+                queryset = queryset.filter(ministries=my_ministry)
+            else:
+                return Server.objects.none()
+
         if ministryId:
             queryset = queryset.filter(ministries=ministryId)
-            print(queryset)
 
         if isActive is not None:
             queryset = queryset.filter(isActive=isActive == 'true')

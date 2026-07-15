@@ -1,181 +1,132 @@
 {% extends 'base.html' %}
-
-{% block title %}
-Tipos de Evento
-{% endblock %}
+{% block title %}Tipos de Evento{% endblock %}
 
 {% block content %}
-
 {{ eventTypesJson|json_script:"eventTypes" }}
 
 <div>
-
-    <h1>
-        Tipos de Evento
-    </h1>
-
-    <div>
-        <input v-model="form.name" placeholder="Nombre">
-
-        <button @click="saveType">
-            [[ form.id ? 'Actualizar' : 'Guardar' ]]
-        </button>
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Tipos de Evento</h1>
+            <p class="text-gray-500">Administra los tipos de eventos disponibles</p>
+        </div>
     </div>
 
-    <table>
+    <p v-if="error" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">[[ error ]]</p>
 
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Nombre</th>
-                <th></th>
-            </tr>
-        </thead>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-6">
+        <h3 class="font-semibold text-gray-800 mb-4">[[ form.id ? 'Editar tipo' : 'Nuevo tipo' ]]</h3>
+        <div class="flex gap-3 items-end">
+            <div class="flex-1">
+                <label class="block text-xs font-medium text-gray-500 mb-1">Nombre del tipo</label>
+                <input v-model="form.name" placeholder="Ej: Culto, Reunión, Taller"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+            </div>
+            <button @click="saveType"
+                    class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition flex items-center gap-1">
+                <i :class="form.id ? 'ti ti-device-floppy' : 'ti ti-plus'"></i>
+                [[ form.id ? 'Actualizar' : 'Guardar' ]]
+            </button>
+            <button v-if="form.id" @click="resetForm"
+                    class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition">
+                Cancelar
+            </button>
+        </div>
+    </div>
 
-        <tbody>
-
-            <tr v-for="type in types" :key="type.id">
-
-                <td>
-                    [[ type.id ]]
-                </td>
-
-                <td>
-                    [[ type.name ]]
-                </td>
-
-                <td>
-
-                    <button @click="editType(type)">
-                        Editar
-                    </button>
-
-                    <button v-if="type.isActive" @click="deactivateType(type)">
-                        Desactivar
-                    </button>
-
-                    <button v-else @click="activateType(type)">
-                        Activar
-                    </button>
-
-                </td>
-
-            </tr>
-
-        </tbody>
-
-    </table>
-
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <table class="w-full">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">ID</th>
+                    <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Nombre</th>
+                    <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Estado</th>
+                    <th class="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                <tr v-for="type in types" :key="type.id" class="hover:bg-gray-50">
+                    <td class="px-4 py-3 text-sm text-gray-600">[[ type.id ]]</td>
+                    <td class="px-4 py-3 text-sm font-medium text-gray-800">[[ type.name ]]</td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-0.5 rounded-full text-xs font-medium"
+                              :class="type.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'">
+                            [[ type.isActive ? 'Activo' : 'Inactivo' ]]
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                        <div class="flex items-center justify-center gap-1">
+                            <button @click="editType(type)"
+                                    class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Editar">
+                                <i class="ti ti-edit"></i>
+                            </button>
+                            <button v-if="type.isActive" @click="deactivateType(type)"
+                                    class="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition" title="Desactivar">
+                                <i class="ti ti-x"></i>
+                            </button>
+                            <button v-else @click="activateType(type)"
+                                    class="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition" title="Activar">
+                                <i class="ti ti-check"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                <tr v-if="types.length === 0">
+                    <td colspan="4" class="px-4 py-8 text-center text-gray-400 text-sm">
+                        <i class="ti ti-category text-3xl block mb-2"></i>
+                        No hay tipos de evento registrados
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 </div>
-
 {% endblock %}
 
 {% block vueData %}
 <script>
-
 const pageData = {
-
     types: JSON.parse(document.getElementById('eventTypes').textContent),
-
-    form: {
-        id: null,
-        name: ''
-    }
-
+    form: { id: null, name: '' },
+    error: ''
 }
-
 </script>
 {% endblock %}
 
 {% block vueMethods %}
 <script>
-
 const pageMethods = {
     async saveType() {
-        let url = '/events/types/view/'
-        method = 'POST';
-        console.log(this.form.id);
-        
-        const data = await this.apiRequest(url, {
-            method,
+        const data = await this.apiRequest('/events/types/view/', {
+            method: 'POST',
             body: JSON.stringify(this.form),
         })
-
         if (!data) return
-
-        this.types = data.eventTypesJson;
-        console.log(this.types);
-        
+        this.types = data.eventTypesJson
         this.resetForm()
     },
-
     editType(type) {
-
-        this.form = {
-            id: type.id,
-            name: type.name
-        }
-
+        this.form = { id: type.id, name: type.name }
     },
-
     async deactivateType(type) {
-
-        if (!confirm('¿Deseas desactivar este Tipo?')) {
-            return
-        }
-
-        const data = await this.apiRequest(`/api/types/${type.id}/deactivate/`,
-            {
-                method: 'PATCH'
-            }
-        )
-
+        if (!confirm('¿Desactivar este tipo?')) return
+        const data = await this.apiRequest(`/api/types/${type.id}/deactivate/`, { method: 'PATCH' })
         if (!data) return
-
         await this.fetchTypes()
     },
-
     async activateType(type) {
-
-        if (!confirm('¿Deseas activar este Tipo?')) {
-            return
-        }
-
-        const data = await this.apiRequest(`/api/types/${type.id}/activate/`,
-            {
-                method: 'PATCH'
-            }
-        )
-
+        if (!confirm('¿Activar este tipo?')) return
+        const data = await this.apiRequest(`/api/types/${type.id}/activate/`, { method: 'PATCH' })
         if (!data) return
-
         await this.fetchTypes()
     },
-
     async fetchTypes() {
-        let url = '/api/types/?'
-
-        if (this.isActiveFilter) {
-            url += `isActive=${this.isActiveFilter}`
-        }
-
-        const data = await this.apiRequest(url)
-
-        if (!data) return
-
-        this.types = data
+        const data = await this.apiRequest('/api/types/')
+        if (data) this.types = data
     },
-
     resetForm() {
-
-        this.form = {
-            id: null,
-            name: ''
-        }
-
+        this.form = { id: null, name: '' }
     }
-
 }
-
 </script>
 {% endblock %}

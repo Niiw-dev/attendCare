@@ -12,19 +12,16 @@ from users.permissions import IsPastor
 
 
 def ministriesView(request):
+    from users.models import User
+    from users.serializers import UserSerializer
 
-    ministriesData = list(
-        Ministry.objects.all().values(
-            'id',
-            'name',
-            'description',
-            'leaderAssigned_id',
-            'isActive'
-        )
-    )
+    ministries = Ministry.objects.all()
+
+    leaders = User.objects.filter(role='LIDER', is_active=True)
 
     return render(request, 'ministries/index.html', {
-        'ministriesJson': ministriesData
+        'ministriesJson': MinistrySerializer(ministries, many=True).data,
+        'leadersJson': UserSerializer(leaders, many=True).data,
     })
 
 

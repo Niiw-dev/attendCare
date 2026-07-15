@@ -1,513 +1,380 @@
 {% extends "base.html" %}
 
-{% block title %}
-Eventos
-{% endblock %}
+{% block title %}Eventos{% endblock %}
 
 {% block content %}
 
 {{ eventsJson|json_script:"events-data" }}
 {{ eventTypesJson|json_script:"eventTypes" }}
 {{ eventStatusesJson|json_script:"eventStatuses" }}
+{{ ministriesJson|json_script:"ministries-data" }}
 
 <div>
-
-    <h1>Eventos</h1>
-
-    <p v-if="error">
-        [[ error ]]
-    </p>
-
-    <div>
-
-        <select v-model="typeFilter" @change="fetchEvents">
-            <option value="">
-                Todos los tipos
-            </option>
-
-            <option
-                v-for="type in eventTypes"
-                :key="type.id"
-                :value="type.id">
-
-                [[ type.name ]]
-
-            </option>
-
-        </select>
-
-        <select
-            v-model="statusFilter"
-            @change="fetchEvents">
-
-            <option value="">
-                Todos los estados
-            </option>
-
-            <option
-                v-for="status in eventStatuses"
-                :key="status.id"
-                :value="status.id">
-
-                [[ status.name ]]
-
-            </option>
-
-        </select>
-
-        <input
-            type="date"
-            v-model="startDateFilter"
-            @change="fetchEvents">
-
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Eventos</h1>
+            <p class="text-gray-500">Gestión de eventos de la iglesia</p>
+        </div>
+        <button @click="openNewForm()" v-if="!showForm"
+                class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition flex items-center gap-1">
+            <i class="ti ti-plus"></i> Nuevo evento
+        </button>
     </div>
 
-    <hr>
+    <p v-if="error" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">[[ error ]]</p>
 
-    <h2>
-
-        [[ form.id
-            ? 'Editar evento'
-            : 'Crear evento'
-        ]]
-
-    </h2>
-
-    <div>
-
-        <label>Nombre</label>
-
-        <input
-            type="text"
-            v-model="form.name">
-
+    <div v-if="showForm" class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-6">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="font-semibold text-gray-800">[[ form.id ? 'Editar evento' : 'Crear evento' ]]</h3>
+            <button @click="showForm = false; resetForm()" class="text-gray-400 hover:text-gray-600">
+                <i class="ti ti-x text-lg"></i>
+            </button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1">Nombre</label>
+                <input type="text" v-model="form.name" placeholder="Nombre del evento"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1">Tipo</label>
+                <select v-model="form.type"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    <option value="">Seleccione...</option>
+                    <option v-for="type in eventTypes" :key="type.id" :value="type.id">
+                        [[ type.name ]]
+                    </option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1">Ministerio líder</label>
+                <select v-model="form.leaderMinistry"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    <option value="">Seleccione...</option>
+                    <option v-for="ministry in ministries" :key="ministry.id" :value="ministry.id">
+                        [[ ministry.name ]]
+                    </option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1">Inicio</label>
+                <input type="datetime-local" v-model="form.startDate"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1">Fin</label>
+                <input type="datetime-local" v-model="form.endDate"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1">Ministerios participantes</label>
+                <select id="ministriesSelect" multiple
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    <option v-for="m in ministries" :key="m.id" :value="m.id">
+                        [[ m.name ]]
+                    </option>
+                </select>
+            </div>
+            <div class="md:col-span-3">
+                <label class="block text-xs font-medium text-gray-500 mb-1">
+                    Servidores asignados <span class="text-gray-400 font-normal">(opcional)</span>
+                </label>
+                <p class="text-xs text-gray-400 mb-2">Se muestran servidores de los ministerios seleccionados</p>
+                <select id="serversSelect" multiple
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    <option v-for="s in filteredServers" :key="s.id" :value="s.id">
+                        [[ s.firstName ]] [[ s.lastName ]]
+                    </option>
+                </select>
+                <p v-if="filteredServers.length === 0 && selectedMinistryIds.length > 0" class="text-sm text-gray-400 italic mt-1">
+                    No hay servidores en los ministerios seleccionados
+                </p>
+            </div>
+        </div>
+        <div class="flex gap-2 mt-4">
+            <button @click="saveEvent"
+                    class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition flex items-center gap-1">
+                <i :class="form.id ? 'ti ti-device-floppy' : 'ti ti-plus'"></i>
+                [[ form.id ? 'Actualizar' : 'Crear' ]]
+            </button>
+            <button @click="showForm = false; resetForm()"
+                    class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition flex items-center gap-1">
+                <i class="ti ti-x"></i> Cancelar
+            </button>
+        </div>
     </div>
 
-    <div>
-
-        <label>Tipo</label>
-
-        <select
-            v-model="form.type">
-
-            <option
-                v-for="type in eventTypes"
-                :value="type.id">
-
-                [[ type.name ]]
-
-            </option>
-
-        </select>
-
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-6">
+        <div class="flex flex-wrap gap-4 items-end">
+            <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1">Filtrar por tipo</label>
+                <select v-model="typeFilter" @change="fetchEvents"
+                        class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    <option value="">Todos los tipos</option>
+                    <option v-for="type in eventTypes" :key="type.id" :value="type.id">
+                        [[ type.name ]]
+                    </option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1">Filtrar por estado</label>
+                <select v-model="statusFilter" @change="fetchEvents"
+                        class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    <option value="">Todos los estados</option>
+                    <option v-for="status in eventStatuses" :key="status.id" :value="status.id">
+                        [[ status.name ]]
+                    </option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1">Filtrar por fecha</label>
+                <input type="date" v-model="startDateFilter" @change="fetchEvents"
+                       class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+            </div>
+        </div>
     </div>
 
-    <div>
-
-        <label>Ministerio líder</label>
-
-        <select
-            v-model="form.leaderMinistry">
-
-            <option
-                v-for="ministry in activeMinistries"
-                :value="ministry.id">
-
-                [[ ministry.name ]]
-
-            </option>
-
-        </select>
-
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <table class="w-full">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Nombre</th>
+                    <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Tipo</th>
+                    <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Estado</th>
+                    <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Inicio</th>
+                    <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Fin</th>
+                    <th class="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                <tr v-for="event in events" :key="event.id" class="hover:bg-gray-50">
+                    <td class="px-4 py-3 text-sm font-medium text-gray-800">[[ event.name ]]</td>
+                    <td class="px-4 py-3 text-sm text-gray-600">[[ event.typeData.name ]]</td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-0.5 rounded-full text-xs font-medium"
+                              :class="statusBadgeClass(event.statusData.name)">
+                            [[ event.statusData.name ]]
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-600">[[ formatDate(event.startDate) ]]</td>
+                    <td class="px-4 py-3 text-sm text-gray-600">[[ formatDate(event.endDate) ]]</td>
+                    <td class="px-4 py-3 text-center">
+                        <div class="flex items-center justify-center gap-1">
+                            <a :href="'/events/' + event.id + '/detail/'"
+                               class="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Ver detalle">
+                                <i class="ti ti-eye"></i>
+                            </a>
+                            <template v-if="event.statusData.name !== 'FINALIZADO' && event.statusData.name !== 'RECONCILIADO' && event.statusData.name !== 'CANCELADO'">
+                                <button @click="editEvent(event)"
+                                        class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Editar">
+                                    <i class="ti ti-edit"></i>
+                                </button>
+                                <button @click="deactivateEvent(event)"
+                                        class="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition" title="Cancelar">
+                                    <i class="ti ti-x"></i>
+                                </button>
+                            </template>
+                        </div>
+                    </td>
+                </tr>
+                <tr v-if="events.length === 0">
+                    <td colspan="6" class="px-4 py-8 text-center text-gray-400 text-sm">
+                        <i class="ti ti-calendar-event text-3xl block mb-2"></i>
+                        No hay eventos registrados
+                    </td>
+                </tr>
+            </tbody>
+        </table>
     </div>
-
-    <div>
-
-        <label>Inicio</label>
-
-        <input
-            type="datetime-local"
-            v-model="form.startDate">
-
-    </div>
-
-    <div>
-
-        <label>Fin</label>
-
-        <input
-            type="datetime-local"
-            v-model="form.endDate">
-
-    </div>
-
-    <div>
-
-        <label>
-            Ministerios participantes
-        </label>
-
-        <select
-            id="ministriesSelect"
-            multiple>
-
-            <option
-                v-for="ministry in activeMinistries"
-                :value="ministry.id">
-
-                [[ ministry.name ]]
-
-            </option>
-
-        </select>
-
-    </div>
-
-    <br>
-
-    <button @click="saveEvent">
-
-        [[ form.id
-            ? 'Actualizar'
-            : 'Crear'
-        ]]
-
-    </button>
-
-    <button
-        v-if="form.id"
-        @click="resetForm">
-
-        Cancelar
-
-    </button>
-
-    <hr>
-
-    <table border="1">
-
-        <thead>
-
-        <tr>
-
-            <th>Nombre</th>
-
-            <th>Tipo</th>
-
-            <th>Estado</th>
-
-            <th>Inicio</th>
-
-            <th>Fin</th>
-
-            <th>Acciones</th>
-
-        </tr>
-
-        </thead>
-
-        <tbody>
-
-        <tr
-            v-for="event in events"
-            :key="event.id">
-
-            <td>
-                [[ event.name ]]
-            </td>
-
-            <td>
-                [[ event.typeData.name ]]
-            </td>
-
-            <td>
-                [[ event.statusData.name ]]
-            </td>
-
-            <td>
-                [[ event.startDate ]]
-            </td>
-
-            <td>
-                [[ event.endDate ]]
-            </td>
-
-            <td v-if="event.status!=5">
-
-                <button @click="editEvent(event)">
-                    Editar
-                </button>
-
-                <button @click="deactivateEvent(event)">
-                    Cancelar
-                </button>
-
-            </td>
-
-        </tr>
-
-        </tbody>
-
-    </table>
-
 </div>
 
 {% endblock %}
 
 {% block vueData %}
 <script>
-
 const pageData = {
-
-    events: JSON.parse(
-        document.getElementById(
-            'events-data'
-        ).textContent
-    ),
-
-    ministries: [],
-
-    eventTypes: JSON.parse(
-        document.getElementById(
-            'eventTypes'
-        ).textContent
-    ),
-
-    eventStatuses: JSON.parse(
-        document.getElementById(
-            'eventStatuses'
-        ).textContent
-    ),
-
+    events: JSON.parse(document.getElementById('events-data').textContent),
+    ministries: JSON.parse(document.getElementById('ministries-data').textContent),
+    eventTypes: JSON.parse(document.getElementById('eventTypes').textContent),
+    eventStatuses: JSON.parse(document.getElementById('eventStatuses').textContent),
+    servers: [],
+    showForm: false,
     typeFilter: '',
-
     statusFilter: '',
-
     startDateFilter: '',
-
     form: {
-
-        id:null,
-
-        name:'',
-
-        type:'',
-
-        status:'',
-
-        leaderMinistry:'',
-
-        startDate:'',
-
-        endDate:'',
-
-        ministryIds:[]
-    }
-
+        id: null,
+        name: '',
+        type: '',
+        status: '',
+        leaderMinistry: '',
+        startDate: '',
+        endDate: '',
+    },
+    selectedMinistryIds: [],
+    selectedServerIds: [],
+    error: ''
 }
-
 </script>
 {% endblock %}
 
 {% block vueComputed %}
 <script>
-
 const pageComputed = {
-
-    activeMinistries(){
-
-        return this.ministries.filter(
-            ministry=>ministry.isActive
-        )
-
+    filteredServers() {
+        if (this.selectedMinistryIds.length === 0) return []
+        return this.servers.filter(s => {
+            if (!s.ministries || s.ministries.length === 0) return false
+            return s.ministries.some(m => this.selectedMinistryIds.includes(m.id))
+        })
     }
-
 }
-
 </script>
 {% endblock %}
 
 {% block vueMethods %}
 <script>
-
 const pageMethods = {
-
-async fetchEvents(){
-
-    let url="/api/events/?"
-
-    if(this.typeFilter){
-
-        url+=`typeId=${this.typeFilter}&`
-
-    }
-
-    if(this.statusFilter){
-
-        url+=`status=${this.statusFilter}&`
-
-    }
-
-    if(this.startDateFilter){
-
-        url+=`startDate=${this.startDateFilter}`
-
-    }
-
-    const data=await this.apiRequest(url)
-
-    if(!data) return
-
-    this.events=data
-
-},
-
-async fetchTypes(){
-
-    this.eventTypes=
-        await this.apiRequest("/api/eventTypes/")
-
-},
-
-async fetchStatuses(){
-
-    this.eventStatuses=
-        await this.apiRequest("/api/eventStatuses/")
-
-},
-
-async fetchMinistries(){
-
-    this.ministries=
-        await this.apiRequest("/api/ministries/?isActive=true")
-
-    this.$nextTick(()=>{
-
-        this.initializeSelect2()
-
-    })
-
-},
-
-initializeSelect2(){
-
-    const vm=this
-
-    $('#ministriesSelect')
-    .select2({
-        width:'100%'
-    })
-    .on('change',function(){
-
-        vm.form.ministryIds=$(this).val()
-            ?$(this).val().map(Number)
-            :[]
-
-    })
-
-},
-
-editEvent(event){
-
-    this.form={
-
-        id:event.id,
-
-        name:event.name,
-
-        type:event.type,
-
-        status:event.status,
-
-        leaderMinistry:event.leaderMinistry,
-
-        startDate:event.startDate.substring(0,16),
-
-        endDate:event.endDate.substring(0,16),
-
-        ministryIds:event.ministries.map(
-            ministry=>ministry.id
-        )
-
-    }
-
-    this.$nextTick(()=>{
-
-        $('#ministriesSelect')
-            .val(this.form.ministryIds)
-            .trigger('change')
-
-    })
-
-},
-
-resetForm(){
-
-    this.form={
-        id:null,
-        name:'',
-        type:'',
-        status:'',
-        leaderMinistry:'',
-        startDate:'',
-        endDate:'',
-        ministryIds:[]
-    }
-
-    $('#ministriesSelect')
-        .val([])
-        .trigger('change')
-
-},
-
-async saveEvent(){
-
-    let url=`/api/events/${this.form.id}/`;
-    let method="PATCH";
-
-    if(this.form.id == null){
-        this.form.status = 1;
-        url="/api/events/";
-        method="POST";
-    }
-
-    const data=await this.apiRequest(
-        url,
-        {
-            method,
-            body:JSON.stringify(this.form)
+    formatDate(date) {
+        if (!date) return ''
+        return new Date(date).toLocaleString('es-ES', {
+            year: 'numeric', month: 'long', day: 'numeric',
+            hour: '2-digit', minute: '2-digit'
+        })
+    },
+    statusBadgeClass(name) {
+        const map = {
+            'ACTIVO': 'bg-green-100 text-green-700',
+            'PROGRAMADO': 'bg-blue-100 text-blue-700',
+            'FINALIZADO': 'bg-gray-100 text-gray-700',
+            'RECONCILIADO': 'bg-purple-100 text-purple-700',
+            'CANCELADO': 'bg-red-100 text-red-700',
         }
-    )
+        return map[name] || 'bg-gray-100 text-gray-700'
+    },
+    async fetchEvents() {
+        let url = '/api/events/?'
+        if (this.typeFilter) url += `typeId=${this.typeFilter}&`
+        if (this.statusFilter) url += `status=${this.statusFilter}&`
+        if (this.startDateFilter) url += `startDate=${this.startDateFilter}`
+        const data = await this.apiRequest(url)
+        if (!data) return
+        this.events = data
+    },
+    async fetchServers() {
+        const data = await this.apiRequest('/api/servers/?isActive=true')
+        if (data) this.servers = data
+    },
+    initSelect2() {
+        const vm = this
+        if ($('#ministriesSelect').data('select2')) {
+            $('#ministriesSelect').select2('destroy')
+        }
+        $('#ministriesSelect')
+            .select2({ width: '100%', placeholder: 'Seleccione ministerios' })
+            .on('change', function () {
+                vm.selectedMinistryIds = $(this).val() ? $(this).val().map(Number) : []
+                vm.$nextTick(() => vm.refreshServersSelect())
+            })
+        $('#ministriesSelect').val(vm.selectedMinistryIds).trigger('change')
 
-    if(!data) return
-
-    this.resetForm()
-
-    await this.fetchEvents()
-
-},
-async deactivateEvent(event) {
-if (!confirm('¿Deseas Cancelar este Evento?')) {
-    return
-}
-
-const data = await this.apiRequest(
-    `/api/events/${event.id}/deactivate/`,
-    {
-        method: 'PATCH'
+        if ($('#serversSelect').data('select2')) {
+            $('#serversSelect').select2('destroy')
+        }
+        $('#serversSelect')
+            .select2({ width: '100%', placeholder: 'Seleccione servidores' })
+            .on('change', function () {
+                vm.selectedServerIds = $(this).val() ? $(this).val().map(Number) : []
+            })
+        this.refreshServersSelect()
+    },
+    refreshServersSelect() {
+        const vm = this
+        const $sel = $('#serversSelect')
+        const prevVal = $sel.val() || []
+        if ($sel.data('select2')) $sel.select2('destroy')
+        $sel.empty()
+        this.filteredServers.forEach(s => {
+            const opt = new Option(s.firstName + ' ' + s.lastName, s.id, false, prevVal.includes(String(s.id)))
+            $sel.append(opt)
+        })
+        $sel.select2({ width: '100%', placeholder: 'Seleccione servidores' })
+            .on('change', function () {
+                vm.selectedServerIds = $(this).val() ? $(this).val().map(Number) : []
+            })
+        $sel.trigger('change')
+    },
+    editEvent(event) {
+        this.showForm = true
+        this.form = {
+            id: event.id,
+            name: event.name,
+            type: event.type,
+            status: event.status,
+            leaderMinistry: event.leaderMinistry,
+            startDate: event.startDate ? event.startDate.substring(0, 16) : '',
+            endDate: event.endDate ? event.endDate.substring(0, 16) : '',
+        }
+        this.selectedMinistryIds = event.ministries ? event.ministries.map(m => m.id) : []
+        this.selectedServerIds = event.assignments ? event.assignments.map(a => a.server) : []
+        this.$nextTick(() => {
+            this.initSelect2()
+        })
+    },
+    openNewForm() {
+        this.showForm = true
+        this.resetForm()
+        this.$nextTick(() => this.initSelect2())
+    },
+    resetForm() {
+        this.form = {
+            id: null,
+            name: '',
+            type: '',
+            status: '',
+            leaderMinistry: '',
+            startDate: '',
+            endDate: '',
+        }
+        this.selectedMinistryIds = []
+        this.selectedServerIds = []
+    },
+    async saveEvent() {
+        const payload = {
+            name: this.form.name,
+            type: this.form.type,
+            leaderMinistry: this.form.leaderMinistry,
+            startDate: this.form.startDate,
+            endDate: this.form.endDate,
+            ministryIds: this.selectedMinistryIds,
+            assignmentServerIds: this.selectedServerIds,
+        }
+        let url = '/api/events/'
+        let method = 'POST'
+        if (this.form.id) {
+            url += this.form.id + '/'
+            method = 'PATCH'
+        }
+        const data = await this.apiRequest(url, {
+            method,
+            body: JSON.stringify(payload)
+        })
+        if (!data) return
+        this.showForm = false
+        this.resetForm()
+        await this.fetchEvents()
+    },
+    async deactivateEvent(event) {
+        if (!confirm('¿Deseas Cancelar este Evento?')) return
+        const data = await this.apiRequest(`/api/events/${event.id}/deactivate/`, {
+            method: 'PATCH'
+        })
+        if (!data) return
+        await this.fetchEvents()
+    },
+    async onMounted() {
+        await this.fetchServers()
     }
-)
-
-if (!data) return
-
-await this.fetchEvents()
-},
-
-async onMounted(){
-    await this.fetchMinistries()
 }
-
-}
-
 </script>
 {% endblock %}

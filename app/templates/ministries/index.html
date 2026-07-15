@@ -1,161 +1,138 @@
 {% extends "base.html" %}
 
-{% block title %}
-Ministerios
-{% endblock %}
+{% block title %}Ministerios{% endblock %}
 
 {% block content %}
 
 {{ ministriesJson|json_script:"ministries-data" }}
-
-<h1>Ministerios</h1>
-
-<p>
-    Gestión de ministerios
-</p>
-
-<hr>
-
-<p>
-    Activos: [[ activeCount ]]
-</p>
-
-<p>
-    Inactivos: [[ inactiveCount ]]
-</p>
-
-<hr>
-
-<p v-if="error">
-    [[ error ]]
-</p>
-
-<h2>
-    [[ form.id ? 'Editar ministerio' : 'Crear ministerio' ]]
-</h2>
+{{ leadersJson|json_script:"leaders-data" }}
 
 <div>
-    <label>
-        Nombre
-    </label>
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Ministerios</h1>
+            <p class="text-gray-500">Gestión de ministerios de la iglesia</p>
+        </div>
+        <div class="flex gap-2">
+            <span class="px-3 py-1.5 bg-green-50 text-green-700 rounded-lg text-sm font-medium flex items-center gap-1">
+                <i class="ti ti-circle-filled text-[8px]"></i> [[ activeCount ]] activos
+            </span>
+            <span class="px-3 py-1.5 bg-red-50 text-red-700 rounded-lg text-sm font-medium flex items-center gap-1">
+                <i class="ti ti-circle-filled text-[8px]"></i> [[ inactiveCount ]] inactivos
+            </span>
+        </div>
+    </div>
 
-    <br>
+    <p v-if="error" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">[[ error ]]</p>
 
-    <input v-model="form.name" type="text" placeholder="Nombre">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-6">
+        <h3 class="font-semibold text-gray-800 mb-4">[[ form.id ? 'Editar ministerio' : 'Crear ministerio' ]]</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1">Nombre</label>
+                <input v-model="form.name" type="text" placeholder="Nombre del ministerio"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1">Descripción</label>
+                <textarea v-model="form.description" placeholder="Descripción" rows="1"
+                          class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></textarea>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1">Líder asignado</label>
+                <select v-model="form.leaderAssigned"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    <option :value="null">Sin líder</option>
+                    <option v-for="leader in leaders" :key="leader.id" :value="leader.id">
+                        [[ leader.username ]]
+                    </option>
+                </select>
+            </div>
+        </div>
+        <div class="flex gap-2 mt-4">
+            <button @click="saveMinistry"
+                    class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition flex items-center gap-1">
+                <i :class="form.id ? 'ti ti-device-floppy' : 'ti ti-plus'"></i>
+                [[ form.id ? 'Actualizar' : 'Crear' ]]
+            </button>
+            <button v-if="form.id" @click="resetForm"
+                    class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition flex items-center gap-1">
+                <i class="ti ti-x"></i> Cancelar
+            </button>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-6">
+        <div class="flex flex-wrap gap-4 items-end">
+            <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1">Filtrar por estado</label>
+                <select v-model="isActiveFilter" @change="fetchMinistries"
+                        class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    <option value="">Todos</option>
+                    <option value="true">Activos</option>
+                    <option value="false">Inactivos</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <table class="w-full">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Nombre</th>
+                    <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Descripción</th>
+                    <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Líder</th>
+                    <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Estado</th>
+                    <th class="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                <tr v-for="ministry in ministries" :key="ministry.id" class="hover:bg-gray-50">
+                    <td class="px-4 py-3 text-sm font-medium text-gray-800">[[ ministry.name ]]</td>
+                    <td class="px-4 py-3 text-sm text-gray-600">[[ ministry.description || 'Sin descripción' ]]</td>
+                    <td class="px-4 py-3 text-sm text-gray-600">[[ ministry.leaderName || 'Sin líder' ]]</td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-0.5 rounded-full text-xs font-medium"
+                              :class="ministry.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'">
+                            [[ ministry.isActive ? 'Activo' : 'Inactivo' ]]
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                        <div class="flex items-center justify-center gap-1">
+                            <button @click="editMinistry(ministry)"
+                                    class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Editar">
+                                <i class="ti ti-edit"></i>
+                            </button>
+                            <button v-if="ministry.isActive" @click="deactivateMinistry(ministry)"
+                                    class="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition" title="Desactivar">
+                                <i class="ti ti-toggle-left"></i>
+                            </button>
+                            <button v-else @click="activateMinistry(ministry)"
+                                    class="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition" title="Activar">
+                                <i class="ti ti-toggle-right"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                <tr v-if="ministries.length === 0">
+                    <td colspan="5" class="px-4 py-8 text-center text-gray-400 text-sm">
+                        <i class="ti ti-building-community text-3xl block mb-2"></i>
+                        No hay ministerios registrados
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 </div>
-
-<br>
-
-<div>
-    <label>
-        Descripción
-    </label>
-
-    <br>
-
-    <textarea v-model="form.description" placeholder="Descripción"></textarea>
-</div>
-
-<br>
-
-<div>
-    <label>
-        Líder asignado
-    </label>
-
-    <br>
-
-    <select v-model="form.leaderAssigned">
-        <option :value="null">
-            Sin líder
-        </option>
-
-        <option v-for="leader in leaders" :key="leader.id" :value="leader.id">
-            [[ leader.username ]]
-        </option>
-    </select>
-</div>
-
-<br>
-
-<button @click="saveMinistry">
-    [[ form.id ? 'Actualizar' : 'Crear' ]]
-</button>
-
-<button v-if="form.id" @click="resetForm">
-    Cancelar
-</button>
-
-<hr>
-
-<h2>
-    Filtros
-</h2>
-
-<select v-model="isActiveFilter" @change="fetchMinistries">
-    <option value="">
-        Todos
-    </option>
-
-    <option value="true">
-        Activos
-    </option>
-
-    <option value="false">
-        Inactivos
-    </option>
-</select>
-
-<hr>
-
-<table border="1" cellpadding="10">
-    <thead>
-        <tr>
-            <th>Nombre</th>
-            <th>Descripción</th>
-            <th>Líder</th>
-            <th>Estado</th>
-            <th>Acciones</th>
-        </tr>
-    </thead>
-
-    <tbody>
-        <tr v-for="ministry in ministries" :key="ministry.id">
-            <td>[[ ministry.name ]]</td>
-            <td>[[ ministry.description || 'Sin descripción' ]]</td>
-            <td>[[ ministry.leaderName || 'Sin líder' ]]</td>
-            <td>[[ ministry.isActive ? 'Activo' : 'Inactivo' ]]</td>
-            <td>
-                <button @click="editMinistry(ministry)">
-                    Editar
-                </button>
-
-                <button v-if="ministry.isActive" @click="deactivateMinistry(ministry)">
-                    Desactivar
-                </button>
-
-                <button v-else @click="activateMinistry(ministry)">
-                    Activar
-                </button>
-            </td>
-        </tr>
-
-        <tr v-if="ministries.length === 0">
-            <td colspan="5">
-                No hay ministerios registrados
-            </td>
-        </tr>
-    </tbody>
-</table>
 
 {% endblock %}
 
 {% block vueData %}
 <script>
-
 const pageData = {
     ministries: JSON.parse(document.getElementById('ministries-data').textContent),
-    leaders: [],
+    leaders: JSON.parse(document.getElementById('leaders-data').textContent),
     isActiveFilter: '',
     form: {
         id: null,
@@ -165,37 +142,26 @@ const pageData = {
     },
     error: ''
 }
-
 </script>
 {% endblock %}
 
 {% block vueMethods %}
 <script>
-
 const pageMethods = {
-
     async fetchMinistries() {
         let url = '/api/ministries/?'
-
         if (this.isActiveFilter) {
             url += `isActive=${this.isActiveFilter}`
         }
-
         const data = await this.apiRequest(url)
-
         if (!data) return
-
         this.ministries = data
     },
-
     async fetchLeaders() {
         const data = await this.apiRequest('/api/usuarios/?role=LIDER&is_active=true')
-
         if (!data) return
-
         this.leaders = data
     },
-
     editMinistry(ministry) {
         this.form = {
             id: ministry.id,
@@ -204,7 +170,6 @@ const pageMethods = {
             leaderAssigned: ministry.leaderAssigned
         }
     },
-
     resetForm() {
         this.form = {
             id: null,
@@ -213,85 +178,49 @@ const pageMethods = {
             leaderAssigned: null
         }
     },
-
     async saveMinistry() {
         const url = this.form.id ? `/api/ministries/${this.form.id}/` : '/api/ministries/'
-
         const method = this.form.id ? 'PATCH' : 'POST'
-
-        const data = await this.apiRequest(url,
-            {
-                method,
-                body: JSON.stringify(this.form)
-            }
-        )
-
+        const data = await this.apiRequest(url, {
+            method,
+            body: JSON.stringify(this.form)
+        })
         if (!data) return
-
         this.resetForm()
-
         await this.fetchMinistries()
     },
-
     async deactivateMinistry(ministry) {
-
-        if (!confirm('¿Deseas desactivar este ministerio?')) {
-            return
-        }
-
-        const data = await this.apiRequest(`/api/ministries/${ministry.id}/deactivate/`,
-            {
-                method: 'PATCH'
-            }
-        )
-
+        if (!confirm('¿Deseas desactivar este ministerio?')) return
+        const data = await this.apiRequest(`/api/ministries/${ministry.id}/deactivate/`, {
+            method: 'PATCH'
+        })
         if (!data) return
-
         await this.fetchMinistries()
     },
-
     async activateMinistry(ministry) {
-
-        if (!confirm('¿Deseas activar este ministerio?')) {
-            return
-        }
-
-        const data = await this.apiRequest(`/api/ministries/${ministry.id}/activate/`,
-            {
-                method: 'PATCH'
-            }
-        )
-
+        if (!confirm('¿Deseas activar este ministerio?')) return
+        const data = await this.apiRequest(`/api/ministries/${ministry.id}/activate/`, {
+            method: 'PATCH'
+        })
         if (!data) return
-
         await this.fetchMinistries()
     },
-
     async onMounted() {
-        await this.fetchLeaders()
         await this.fetchMinistries()
     }
 }
-
 </script>
 {% endblock %}
 
 {% block vueComputed %}
 <script>
-
 const pageComputed = {
     activeCount() {
-        return this.ministries.filter(
-            ministry => ministry.isActive
-        ).length
+        return this.ministries.filter(ministry => ministry.isActive).length
     },
-
     inactiveCount() {
-        return this.ministries.filter(
-            ministry => !ministry.isActive
-        ).length
+        return this.ministries.filter(ministry => !ministry.isActive).length
     }
 }
-
 </script>
 {% endblock %}

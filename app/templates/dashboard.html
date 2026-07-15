@@ -1,18 +1,168 @@
 {% extends "base.html" %}
-
 {% block title %}Dashboard{% endblock %}
 
 {% block content %}
+<div>
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Dashboard</h1>
+            <p class="text-gray-500">[[ user.username ? 'Bienvenido, ' + user.username : 'Cargando...' ]]</p>
+        </div>
+    </div>
 
-<div id="app">
-    <h1>Bienvenido</h1>
+    <p v-if="error" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">[[ error ]]</p>
 
-    <p v-show="user.username">
-        [[ user.username ]] - [[ user.role ]]
-    </p>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 card">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <i class="ti ti-building-community text-blue-600 text-2xl"></i>
+                </div>
+                <i class="ti ti-arrow-right text-gray-300"></i>
+            </div>
+            <p class="text-3xl font-bold text-gray-800">[[ totalMinistries ]]</p>
+            <p class="text-sm text-gray-500 mt-1">Ministerios activos</p>
+            <a href="/ministries/" class="text-sm text-blue-600 hover:text-blue-800 mt-3 inline-block font-medium">
+                Ver todos <i class="ti ti-arrow-right ml-1"></i>
+            </a>
+        </div>
 
-    <button @click="logout">Cerrar sesión</button>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 card">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                    <i class="ti ti-users-group text-green-600 text-2xl"></i>
+                </div>
+                <i class="ti ti-arrow-right text-gray-300"></i>
+            </div>
+            <p class="text-3xl font-bold text-gray-800">[[ totalServers ]]</p>
+            <p class="text-sm text-gray-500 mt-1">Servidores activos</p>
+            <a href="/servers/" class="text-sm text-blue-600 hover:text-blue-800 mt-3 inline-block font-medium">
+                Ver todos <i class="ti ti-arrow-right ml-1"></i>
+            </a>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 card">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center">
+                    <i class="ti ti-calendar-check text-amber-600 text-2xl"></i>
+                </div>
+                <i class="ti ti-arrow-right text-gray-300"></i>
+            </div>
+            <p class="text-3xl font-bold text-gray-800">[[ activeEvents ]]</p>
+            <p class="text-sm text-gray-500 mt-1">Eventos activos</p>
+            <a href="/events/view/" class="text-sm text-blue-600 hover:text-blue-800 mt-3 inline-block font-medium">
+                Ver todos <i class="ti ti-arrow-right ml-1"></i>
+            </a>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 card">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <i class="ti ti-calendar-event text-purple-600 text-2xl"></i>
+                </div>
+                <i class="ti ti-arrow-right text-gray-300"></i>
+            </div>
+            <p class="text-3xl font-bold text-gray-800">[[ todayEventsCount ]]</p>
+            <p class="text-sm text-gray-500 mt-1">Eventos hoy</p>
+            <a href="/events/view/" class="text-sm text-blue-600 hover:text-blue-800 mt-3 inline-block font-medium">
+                Ver todos <i class="ti ti-arrow-right ml-1"></i>
+            </a>
+        </div>
+    </div>
+
+    <div v-if="eventsToday.length > 0" class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="px-4 py-3 border-b border-gray-100">
+            <h3 class="font-semibold text-gray-800">Eventos de hoy</h3>
+        </div>
+        <table class="w-full">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Evento</th>
+                    <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Tipo</th>
+                    <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Inicio</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                <tr v-for="e in eventsToday" :key="e.id" class="hover:bg-gray-50">
+                    <td class="px-4 py-3 text-sm font-medium text-gray-800">[[ e.name ]]</td>
+                    <td class="px-4 py-3 text-sm text-gray-600">[[ e.typeData.name ]]</td>
+                    <td class="px-4 py-3 text-sm text-gray-500">[[ formatDate(e.startDate) ]]</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 </div>
+{% endblock %}
 
+{% block vueData %}
+<script>
+const pageData = {
+    ministries: [],
+    servers: [],
+    events: [],
+    activeStatusId: null,
+    error: ''
+}
+</script>
+{% endblock %}
 
+{% block vueComputed %}
+<script>
+const pageComputed = {
+    totalMinistries() {
+        return this.ministries.length
+    },
+    totalServers() {
+        return this.servers.length
+    },
+    activeEvents() {
+        return this.events.length
+    },
+    eventsToday() {
+        if (!this.events || this.events.length === 0) return []
+        const today = new Date().toISOString().split('T')[0]
+        return this.events.filter(e => e.startDate && e.startDate.substring(0, 10) === today)
+    },
+    todayEventsCount() {
+        return this.eventsToday.length
+    }
+}
+</script>
+{% endblock %}
+
+{% block vueMethods %}
+<script>
+const pageMethods = {
+    formatDate(date) {
+        if (!date) return ''
+        return new Date(date).toLocaleString('es-ES', {
+            year: 'numeric', month: 'long', day: 'numeric',
+            hour: '2-digit', minute: '2-digit'
+        })
+    },
+    async onMounted() {
+        const statuses = await this.apiRequest('/api/eventStatuses/')
+        if (statuses) {
+            const active = statuses.find(s => s.name === 'ACTIVO')
+            if (active) this.activeStatusId = active.id
+        }
+
+        const promises = [
+            this.apiRequest('/api/ministries/?isActive=true'),
+            this.apiRequest('/api/servers/?isActive=true'),
+        ]
+
+        if (this.activeStatusId) {
+            promises.push(this.apiRequest(`/api/events/?status=${this.activeStatusId}`))
+        } else {
+            promises.push(Promise.resolve([]))
+        }
+
+        const [ministries, servers, events] = await Promise.all(promises)
+        if (ministries) this.ministries = ministries
+        if (servers) this.servers = servers
+        if (events) this.events = events
+    }
+}
+</script>
 {% endblock %}

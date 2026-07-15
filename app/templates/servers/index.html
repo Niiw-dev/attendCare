@@ -1,164 +1,176 @@
 {% extends "base.html" %}
 
-{% block title %}
-Servidores
-{% endblock %}
+{% block title %}Servidores{% endblock %}
 
 {% block content %}
 
 {{ serversJson|json_script:"servers-data" }}
+{{ ministriesJson|json_script:"ministries-data" }}
 
 <div>
-    <h1>Servidores</h1>
-
-    <p v-if="error">
-        [[ error ]]
-    </p>
-
-    <div>
-        <select v-model="ministryFilter" @change="fetchServers">
-            <option value="">
-                Todos los ministerios
-            </option>
-
-            <option v-for="ministry in ministries" :key="ministry.id" :value="ministry.id">
-                [[ ministry.name ]]
-            </option>
-        </select>
-
-        <select v-model="isActiveFilter" @change="fetchServers">
-            <option value="">
-                Todos
-            </option>
-
-            <option value="true">
-                Activos
-            </option>
-
-            <option value="false">
-                Inactivos
-            </option>
-        </select>
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Servidores</h1>
+            <p class="text-gray-500">Gestión de servidores de la iglesia</p>
+        </div>
+        <div class="flex gap-2">
+            <span class="px-3 py-1.5 bg-green-50 text-green-700 rounded-lg text-sm font-medium flex items-center gap-1">
+                <i class="ti ti-circle-filled text-[8px]"></i> [[ activeServers ]] activos
+            </span>
+            <span class="px-3 py-1.5 bg-red-50 text-red-700 rounded-lg text-sm font-medium flex items-center gap-1">
+                <i class="ti ti-circle-filled text-[8px]"></i> [[ inactiveServers ]] inactivos
+            </span>
+        </div>
     </div>
 
-    <hr>
+    <p v-if="error" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">[[ error ]]</p>
 
-    <div>
-        <h2>
-            [[ form.id ? 'Editar servidor' : 'Crear servidor' ]]
-        </h2>
-
-        <div>
-            <label>
-                Nombre
-            </label>
-
-            <input type="text" v-model="form.firstName">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-6">
+        <h3 class="font-semibold text-gray-800 mb-4">[[ form.id ? 'Editar servidor' : 'Crear servidor' ]]</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1">Nombre</label>
+                <input type="text" v-model="form.firstName" placeholder="Nombre"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1">Apellido</label>
+                <input type="text" v-model="form.lastName" placeholder="Apellido"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1">Documento</label>
+                <input type="text" v-model="form.document" placeholder="Documento"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1">PIN</label>
+                <input type="password" v-model="form.pin" placeholder="PIN"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1">Huella</label>
+                <input type="text" v-model="form.fingerprint" placeholder="Huella"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1">Ministerios</label>
+                <select id="serversMinistriesSelect" multiple
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    <option v-for="m in ministries" :key="m.id" :value="m.id">
+                        [[ m.name ]]
+                    </option>
+                </select>
+            </div>
         </div>
-
-        <div>
-            <label>
-                Apellido
-            </label>
-
-            <input type="text" v-model="form.lastName">
+        <div class="flex gap-2 mt-4">
+            <button @click="saveServer"
+                    class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition flex items-center gap-1">
+                <i :class="form.id ? 'ti ti-device-floppy' : 'ti ti-plus'"></i>
+                [[ form.id ? 'Actualizar' : 'Crear' ]]
+            </button>
+            <button v-if="form.id" @click="resetForm"
+                    class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition flex items-center gap-1">
+                <i class="ti ti-x"></i> Cancelar
+            </button>
         </div>
-
-        <div>
-            <label>
-                Documento
-            </label>
-
-            <input type="text" v-model="form.document">
-        </div>
-
-        <div>
-            <label>
-                PIN
-            </label>
-
-            <input type="password" v-model="form.pin">
-        </div>
-
-        <div>
-            <label>
-                Huella
-            </label>
-
-            <input type="text" v-model="form.fingerprint">
-        </div>
-
-        <div>
-            <label>
-                Ministerios
-            </label>
-
-            <select id="ministriesSelect" multiple>
-                <option v-for="ministry in activeMinistries" :key="ministry.id" 
-                        :value="ministry.id">
-                    [[ ministry.name ]]
-                </option>
-            </select>
-        </div>
-
-        <br>
-
-        <button @click="saveServer">
-            [[ form.id ? 'Actualizar' : 'Crear' ]]
-        </button>
-
-        <button v-if="form.id" @click="resetForm">
-            Cancelar
-        </button>
     </div>
 
-    <hr>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-6">
+        <div class="flex flex-wrap gap-4 items-end">
+            <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1">Filtrar por ministerio</label>
+                <select v-model="ministryFilter" @change="fetchServers"
+                        class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    <option value="">Todos los ministerios</option>
+                    <option v-for="ministry in ministries" :key="ministry.id" :value="ministry.id">
+                        [[ ministry.name ]]
+                    </option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1">Filtrar por estado</label>
+                <select v-model="isActiveFilter" @change="fetchServers"
+                        class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    <option value="">Todos</option>
+                    <option value="true">Activos</option>
+                    <option value="false">Inactivos</option>
+                </select>
+            </div>
+        </div>
+    </div>
 
-    <table border="1">
-        <thead>
-            <tr>
-                <th>Nombre</th>
-                <th>Documento</th>
-                <th>Estado</th>
-                <th>Ministerios</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr v-for="server in servers" :key="server.id">
-                <td>[[ server.firstName ]] [[ server.lastName ]]</td>
-                <td>[[ server.document ]]</td>
-                <td>[[ server.isActive ? 'Activo' : 'Inactivo' ]]</td>
-                <td>
-                    <span v-for="ministry in server.ministries" :key="ministry.id">
-                        [[ ministry.name ]],
-                    </span>
-                </td>
-                <td>
-                    <button @click="editServer(server)">
-                        Editar
-                    </button>
-
-                    <button v-if="server.isActive" @click="deactivateServer(server)">
-                        Desactivar
-                    </button>
-
-                    <button v-else @click="activateServer(server)">
-                        Activar
-                    </button>
-                </td>
-            </tr>
-        </tbody>
-    </table>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <table class="w-full">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Nombre</th>
+                    <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Documento</th>
+                    <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Estado</th>
+                    <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Ministerios</th>
+                    <th class="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                <tr v-for="server in servers" :key="server.id" class="hover:bg-gray-50">
+                    <td class="px-4 py-3 text-sm font-medium text-gray-800">[[ server.firstName ]] [[ server.lastName ]]</td>
+                    <td class="px-4 py-3 text-sm text-gray-600">[[ server.document ]]</td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-0.5 rounded-full text-xs font-medium"
+                              :class="server.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'">
+                            [[ server.isActive ? 'Activo' : 'Inactivo' ]]
+                        </span>
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="flex flex-wrap gap-1">
+                            <span v-for="ministry in server.ministries" :key="ministry.id"
+                                  class="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full text-xs font-medium">
+                                [[ ministry.name ]]
+                            </span>
+                            <span v-if="!server.ministries || server.ministries.length === 0" class="text-xs text-gray-400">
+                                Sin ministerios
+                            </span>
+                        </div>
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                        <div class="flex items-center justify-center gap-1">
+                            <a :href="'/servers/' + server.id + '/detail/'"
+                               class="p-1.5 text-gray-500 hover:bg-gray-100 rounded-lg transition" title="Ver detalle">
+                                <i class="ti ti-eye"></i>
+                            </a>
+                            <button @click="editServer(server)"
+                                    class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Editar">
+                                <i class="ti ti-edit"></i>
+                            </button>
+                            <button v-if="server.isActive" @click="deactivateServer(server)"
+                                    class="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition" title="Desactivar">
+                                <i class="ti ti-user-off"></i>
+                            </button>
+                            <button v-else @click="activateServer(server)"
+                                    class="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition" title="Activar">
+                                <i class="ti ti-user-check"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                <tr v-if="servers.length === 0">
+                    <td colspan="5" class="px-4 py-8 text-center text-gray-400 text-sm">
+                        <i class="ti ti-users-group text-3xl block mb-2"></i>
+                        No hay servidores registrados
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 </div>
+
 {% endblock %}
 
 {% block vueData %}
 <script>
-
 const pageData = {
     servers: JSON.parse(document.getElementById('servers-data').textContent),
-    ministries: [],
+    ministries: JSON.parse(document.getElementById('ministries-data').textContent),
     ministryFilter: '',
     isActiveFilter: '',
     form: {
@@ -171,61 +183,36 @@ const pageData = {
         ministryIds: []
     }
 }
-
 </script>
 {% endblock %}
 
 {% block vueMethods %}
 <script>
-
 const pageMethods = {
     async fetchServers() {
         let url = '/api/servers/?'
-
         if (this.ministryFilter) {
             url += `ministryId=${this.ministryFilter}&`
         }
-
         if (this.isActiveFilter) {
             url += `isActive=${this.isActiveFilter}`
         }
-
         const data = await this.apiRequest(url)
-
         if (!data) return
-
         this.servers = data
     },
-    async fetchMinistries() {
-        const data = await this.apiRequest(
-            '/api/ministries/?isActive=true'
-        )
-
-        if (!data) return
-
-        this.ministries = data
-
-        this.$nextTick(() => {
-            this.initializeSelect2()
-        })
-    },
     initializeSelect2() {
-        const vm = this
-
-        $('#ministriesSelect')
-            .select2({
-                placeholder: 'Selecciona ministerios',
-                width: '100%'
-            })
-            .on('change', function () {
-                vm.form.ministryIds = $(this).val()
-                    ? $(this).val().map(Number)
-                    : []
-            })
-
-        $('#ministriesSelect')
-            .val(this.form.ministryIds)
-            .trigger('change')
+        try {
+            const vm = this
+            const $sel = $('#serversMinistriesSelect')
+            if (!$sel.length) { console.warn('serversMinistriesSelect not found'); return }
+            if ($sel.data('select2')) $sel.select2('destroy')
+            $sel.select2({ width: '100%', placeholder: 'Selecciona ministerios' })
+                .on('change', function () {
+                    vm.form.ministryIds = $(this).val() ? $(this).val().map(Number) : []
+                })
+            $sel.val(this.form.ministryIds).trigger('change')
+        } catch (e) { console.error('Select2 init error:', e) }
     },
     editServer(server) {
         this.form = {
@@ -235,13 +222,10 @@ const pageMethods = {
             document: server.document,
             pin: '',
             fingerprint: '',
-            ministryIds: server.ministries.map(ministry => ministry.id)
+            ministryIds: server.ministries ? server.ministries.map(m => m.id) : []
         }
-
         this.$nextTick(() => {
-            $('#ministriesSelect')
-                .val(this.form.ministryIds)
-                .trigger('change')
+            $('#serversMinistriesSelect').val(this.form.ministryIds).trigger('change')
         })
     },
     resetForm() {
@@ -254,107 +238,74 @@ const pageMethods = {
             fingerprint: '',
             ministryIds: []
         }
-
         this.$nextTick(() => {
-            $('#ministriesSelect')
-                .val([])
-                .trigger('change')
+            $('#serversMinistriesSelect').val([]).trigger('change')
         })
     },
     async saveServer() {
-        const url = this.form.id
-            ? `/api/servers/${this.form.id}/`
-            : '/api/servers/'
-
-        const method = this.form.id
-            ? 'PATCH'
-            : 'POST'
-
-        const payload = {
-            ...this.form
-        }
-
-        if (!payload.document) {
-            payload.document = null
-        }
-
-        if (!payload.fingerprint) {
-            payload.fingerprint = null
-        }
-
-        const data = await this.apiRequest(url,
-            {
-                method,
-                body: JSON.stringify(payload)
-            }
-        )
-
+        const url = this.form.id ? `/api/servers/${this.form.id}/` : '/api/servers/'
+        const method = this.form.id ? 'PATCH' : 'POST'
+        const payload = { ...this.form }
+        if (!payload.document) payload.document = null
+        if (!payload.fingerprint) payload.fingerprint = null
+        const data = await this.apiRequest(url, {
+            method,
+            body: JSON.stringify(payload)
+        })
         if (!data) return
-
         this.resetForm()
-
         await this.fetchServers()
     },
     async deactivateServer(server) {
-        if (!confirm('¿Deseas desactivar este servidor?')) {
-            return
-        }
-
-        const data = await this.apiRequest(
-            `/api/servers/${server.id}/deactivate/`,
-            {
-                method: 'PATCH'
-            }
-        )
-
+        if (!confirm('¿Deseas desactivar este servidor?')) return
+        const data = await this.apiRequest(`/api/servers/${server.id}/deactivate/`, { method: 'PATCH' })
         if (!data) return
-
         await this.fetchServers()
     },
     async activateServer(server) {
-        if (!confirm('¿Deseas activar este servidor?')) {
-            return
-        }
-
-        const data = await this.apiRequest(
-            `/api/servers/${server.id}/activate/`,
-            {
-                method: 'PATCH'
-            }
-        )
-
+        if (!confirm('¿Deseas activar este servidor?')) return
+        const data = await this.apiRequest(`/api/servers/${server.id}/activate/`, { method: 'PATCH' })
         if (!data) return
-
         await this.fetchServers()
     },
     async onMounted() {
-        await this.fetchMinistries()
+        setTimeout(() => this.initializeSelect2(), 0)
     }
 }
+</script>
 
+<script>
+document.addEventListener('DOMContentLoaded', function serversInit() {
+    function init() {
+        const $sel = $('#serversMinistriesSelect')
+        if (!$sel.length || typeof $ === 'undefined' || typeof $.fn.select2 === 'undefined') {
+            setTimeout(init, 100)
+            return
+        }
+        if ($sel.data('select2')) $sel.select2('destroy')
+        $sel.select2({ width: '100%', placeholder: 'Selecciona ministerios' })
+            .on('change', function () {
+                const vm = document.querySelector('#app').__vue_app__._instance.proxy
+                vm.form.ministryIds = $(this).val() ? $(this).val().map(Number) : []
+            })
+    }
+    setTimeout(init, 300)
+})
 </script>
 {% endblock %}
 
 {% block vueComputed %}
 <script>
-
 const pageComputed = {
     activeServers() {
-        return this.servers.filter(
-            server => server.isActive
-        ).length
+        return this.servers.filter(server => server.isActive).length
     },
     inactiveServers() {
-        return this.servers.filter(
-            server => !server.isActive
-        ).length
+        return this.servers.filter(server => !server.isActive).length
     },
     activeMinistries() {
-        return this.ministries.filter(
-            ministry => ministry.isActive
-        )
+        return this.ministries.filter(ministry => ministry.isActive)
     }
 }
-
 </script>
 {% endblock %}
