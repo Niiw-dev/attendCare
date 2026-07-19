@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% block title %}Usuarios{% endblock %}
 {% block json_data %}
 {{ usuariosJson|json_script:"usuariosData" }}
@@ -37,6 +37,7 @@
                 <label class="block text-xs font-medium text-gray-500 mb-1">Rol</label>
                 <select v-model="form.role"
                         class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    <option value="" disabled selected>Seleccione...</option>
                     <option value="PASTOR">Pastor</option>
                     <option value="LIDER">Líder</option>
                 </select>
@@ -61,7 +62,7 @@
                 <label class="block text-xs font-medium text-gray-500 mb-1">Filtrar por rol</label>
                 <select v-model="filtroRol" @change="fetchUsers"
                         class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                    <option value="">Todos los roles</option>
+                    <option value="" disabled selected>Seleccione...</option>
                     <option value="PASTOR">Pastor</option>
                     <option value="LIDER">Líder</option>
                 </select>
@@ -70,7 +71,7 @@
                 <label class="block text-xs font-medium text-gray-500 mb-1">Filtrar por estado</label>
                 <select v-model="filtroEstado" @change="fetchUsers"
                         class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                    <option value="">Todos</option>
+                    <option value="" disabled selected>Seleccione...</option>
                     <option value="true">Activos</option>
                     <option value="false">Inactivos</option>
                 </select>
@@ -203,7 +204,13 @@
             await this.fetchUsers()
         },
         editar(user) {
-            this.form = { ...user }
+            this.form = {
+                id: user.id,
+                username: user.username,
+                email: user.email,
+                role: user.role || '',
+                password: ''
+            }
         },
         async guardar() {
             const url = this.form.id

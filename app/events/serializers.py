@@ -76,11 +76,15 @@ class EventSerializer(serializers.ModelSerializer):
             setattr(instance, key, value)
         instance.save()
         if ministryIds is not None:
-            EventMinistry.objects.filter(event=instance).delete()
-            self.assignMinistries(instance, ministryIds)
+            current_ministry_ids = set(instance.ministries.values_list('id', flat=True))
+            if set(ministryIds) != current_ministry_ids:
+                EventMinistry.objects.filter(event=instance).delete()
+                self.assignMinistries(instance, ministryIds)
         if assignmentServerIds is not None:
-            Assignment.objects.filter(event=instance).delete()
-            self.assignServers(instance, assignmentServerIds, ministryIds or [])
+            current_server_ids = set(instance.assignments.values_list('server_id', flat=True))
+            if set(assignmentServerIds) != current_server_ids:
+                Assignment.objects.filter(event=instance).delete()
+                self.assignServers(instance, assignmentServerIds, ministryIds or [])
         return instance
 
     def assignMinistries(self, event, ministryIds):
@@ -148,8 +152,8 @@ class AttendanceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Attendance
         fields = ['id', 'server', 'serverData', 'event', 'eventData', 'ministry', 'ministryData',
-                  'timestamp', 'integrityHash']
-        read_only_fields = ['timestamp', 'integrityHash']
+                  'timestamp', 'checkOutTime', 'integrityHash']
+        read_only_fields = ['timestamp', 'checkOutTime', 'integrityHash']
 
     def get_serverData(self, obj):
         return {'id': obj.server.id, 'firstName': obj.server.firstName, 'lastName': obj.server.lastName}
@@ -168,7 +172,12 @@ class KioskoAuthSerializer(serializers.Serializer):
 class KioskoRegisterSerializer(serializers.Serializer):
     serverId = serializers.IntegerField()
     eventId = serializers.IntegerField()
-    ministryId = serializers.IntegerField()
+    ministryId = serializers.IntegerField(required=False)
+
+
+class KioskoCheckoutSerializer(serializers.Serializer):
+    serverId = serializers.IntegerField()
+    eventId = serializers.IntegerField()
 
 
 class ReconciliationSerializer(serializers.ModelSerializer):
