@@ -44,11 +44,14 @@ def dashboardView(request):
 @permission_classes([IsAuthenticated])
 def me(request):
     user = request.user
-
+    from ministries.models import Ministry
+    from ministries.serializers import MinistrySerializer
+    my_ministry = Ministry.objects.filter(leaderAssigned=user).first()
     return Response({
         "id": user.id,
         "username": user.username,
-        "role": user.role
+        "role": user.role,
+        "myMinistry": MinistrySerializer(my_ministry).data if my_ministry else None,
     })
 
 
@@ -59,7 +62,8 @@ class UserViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, IsPastor]
 
 
-    def getQueryset(self):
+    def get_queryset(self):
+        print("1")
         role = self.request.query_params.get('role')
         is_active = self.request.query_params.get('is_active')
 
@@ -76,6 +80,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['patch'])
     def desactivar(self, request, pk=None):
+        print("2")
         user = self.get_object()
 
         if request.user.id == user.id:
@@ -89,6 +94,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['patch'])
     def activar(self, request, pk=None):
+        print("3")
         user = self.get_object()
 
         if request.user.id == user.id:

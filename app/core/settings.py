@@ -47,6 +47,8 @@ INSTALLED_APPS = [
     'users',
     'ministries',
     'servers',
+    'events',
+    'django_extensions',
 ]
 
 MIDDLEWARE = [
@@ -148,12 +150,36 @@ USE_I18N = True
 
 USE_TZ = True
 
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:8090",
+    "http://127.0.0.1:8090",
+]
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = '/static/'
 STATIC_ROOT = '/app/static'
+# Celery
+CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://redis:6379/0')
+CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://redis:6379/0')
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'UTC'
+
+from celery.schedules import crontab
+CELERY_BEAT_SCHEDULE = {
+    'update-event-statuses': {
+        'task': 'events.tasks.update_event_statuses',
+        'schedule': crontab(minute='*'),
+    },
+    'generate-recurring-events': {
+        'task': 'events.tasks.generate_recurring_events',
+        'schedule': crontab(hour='*', minute='0'),
+    },
+}
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 

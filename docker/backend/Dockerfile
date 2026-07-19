@@ -32,4 +32,4 @@ COPY docker/backend /app/docker/backend
 RUN chmod +x /app/docker/backend/entrypoint.sh
 
 # Comando
-CMD ["sh", "/app/docker/backend/entrypoint.sh"]
+CMD ["bash", "/app/docker/backend/entrypoint.sh"]

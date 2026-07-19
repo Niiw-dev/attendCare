@@ -1,0 +1,225 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Estados de Evento
+{% endblock %}
+{% block json_data %}
+{{ eventStatusJson|json_script:"eventStatus" }}
+{% endblock %}
+{% block content %}
+<div>
+
+    <h1>
+        Estados de Evento
+    </h1>
+
+    <div>
+
+        <input
+            v-model="form.name"
+            placeholder="Nombre"
+        >
+
+        <button @click="saveStatus">
+            [[ form.id ? 'Actualizar' : 'Guardar' ]]
+        </button>
+
+    </div>
+
+    <table>
+
+        <thead>
+
+            <tr>
+
+                <th @click="setSort('id')" class="cursor-pointer select-none">ID <i v-if="sortKey === 'id'" :class="sortDir === 'asc' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'" class="inline-block ml-1"></i></th>
+
+                <th @click="setSort('name')" class="cursor-pointer select-none">Nombre <i v-if="sortKey === 'name'" :class="sortDir === 'asc' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'" class="inline-block ml-1"></i></th>
+
+                <th></th>
+
+            </tr>
+
+        </thead>
+
+        <tbody>
+
+            <tr
+                v-for="status in sorted(statuses)"
+                :key="status.id"
+            >
+
+                <td>
+                    [[ status.id ]]
+                </td>
+
+                <td>
+                    [[ status.name ]]
+                </td>
+
+                <td>
+
+                    <button
+                        @click="editStatus(status)"
+                    >
+                        Editar
+                    </button>
+
+                    <button v-if="status.isActive" @click="deactivateStatus(status)">
+                        Desactivar
+                    </button>
+
+                    <button v-else @click="activateStatus(status)">
+                        Activar
+                    </button>
+
+                </td>
+
+            </tr>
+
+        </tbody>
+
+    </table>
+
+</div>
+
+{% endblock %}
+
+{% block vueData %}
+<script>
+
+const pageData = {
+
+    statuses: JSON.parse(document.getElementById('eventStatus').textContent),
+
+    form: {
+        id: null,
+        name: '',
+    },
+
+    sortKey: '',
+    sortDir: 'asc',
+
+}
+
+</script>
+{% endblock %}
+
+{% block vueMethods %}
+<script>
+
+const pageMethods = {
+    async saveStatus() {
+        let url = '/events/statuses/view/'
+        method = 'POST';
+        
+        const data = await this.apiRequest(url, {
+            method,
+            body: JSON.stringify(this.form),
+        })
+
+        if (!data) return
+
+        this.statuses = data.eventStatusJson;
+        
+        this.resetForm()
+    },
+
+    editStatus(status) {
+
+        this.form = {
+            id: status.id,
+            name: status.name,
+        }
+
+    },
+
+    async deactivateStatus(status) {
+
+        if (!confirm('¿Deseas desactivar este Estado?')) {
+            return
+        }
+
+        const data = await this.apiRequest(`/api/status/${status.id}/deactivate/`,
+            {
+                method: 'PATCH'
+            }
+        )
+
+        if (!data) return
+
+        await this.fetchStatus()
+    },
+
+    async activateStatus(status) {
+
+        if (!confirm('¿Deseas activar este Estado?')) {
+            return
+        }
+
+        const data = await this.apiRequest(`/api/status/${status.id}/activate/`,
+            {
+                method: 'PATCH'
+            }
+        )
+
+        if (!data) return
+
+        await this.fetchStatus()
+    },
+
+    async fetchStatus() {
+        let url = '/api/status/?'
+
+        if (this.isActiveFilter) {
+            url += `isActive=${this.isActiveFilter}`
+        }
+
+        const data = await this.apiRequest(url)
+
+        if (!data) return
+
+        this.statuses = data
+    },
+
+    resetForm() {
+
+        this.form = {
+            id: null,
+            name: '',
+        }
+
+    },
+
+    setSort(key) {
+        if (this.sortKey === key) {
+            this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc'
+        } else {
+            this.sortKey = key
+            this.sortDir = 'asc'
+        }
+    },
+    sorted(arr) {
+        if (!this.sortKey || !arr) return arr
+        const sorted = [...arr]
+        sorted.sort((a, b) => {
+            let valA = this.getNestedValue(a, this.sortKey)
+            let valB = this.getNestedValue(b, this.sortKey)
+            if (valA == null) valA = ''
+            if (valB == null) valB = ''
+            if (typeof valA === 'string') valA = valA.toLowerCase()
+            if (typeof valB === 'string') valB = valB.toLowerCase()
+            if (valA < valB) return this.sortDir === 'asc' ? -1 : 1
+            if (valA > valB) return this.sortDir === 'asc' ? 1 : -1
+            return 0
+        })
+        return sorted
+    },
+    getNestedValue(obj, path) {
+        return path.split('.').reduce((o, p) => o ? o[p] : '', obj)
+    },
+
+}
+
+</script>
+{% endblock %}

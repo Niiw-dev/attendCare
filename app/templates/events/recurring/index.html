@@ -1,0 +1,249 @@
+﻿{% extends 'base.html' %}
+{% block title %}Eventos Recurrentes{% endblock %}
+{% block json_data %}
+{{ recurringEventsJson|json_script:"recurringEvents" }}
+{{ eventTypesJson|json_script:"eventTypes" }}
+{% endblock %}
+{% block content %}
+
+<div>
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Eventos Recurrentes</h1>
+            <p class="text-gray-500">Configura eventos que se repiten semanalmente</p>
+        </div>
+    </div>
+
+    <p v-if="error" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">[[ error ]]</p>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-6">
+        <h3 class="font-semibold text-gray-800 mb-4">[[ form.id ? 'Editar evento recurrente' : 'Nuevo evento recurrente' ]]</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1">Nombre</label>
+                <input v-model="form.name" placeholder="Nombre del evento"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1">Día de la semana</label>
+                <select v-model="form.weekday"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    <option value="" disabled selected>Seleccione...</option>
+                    <option :value="0">Lunes</option>
+                    <option :value="1">Martes</option>
+                    <option :value="2">Miércoles</option>
+                    <option :value="3">Jueves</option>
+                    <option :value="4">Viernes</option>
+                    <option :value="5">Sábado</option>
+                    <option :value="6">Domingo</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1">Tipo de evento</label>
+                <select v-model="form.eventType"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    <option value="" disabled selected>Seleccione...</option>
+                    <option v-for="type in eventTypes" :key="type.id" :value="type.id">
+                        [[ type.name ]]
+                    </option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1">Hora de inicio</label>
+                <input type="time" v-model="form.startTime"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1">Hora de fin</label>
+                <input type="time" v-model="form.endTime"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+            </div>
+        </div>
+        <div class="flex gap-2 mt-4">
+            <button @click="saveRecurring"
+                    class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition flex items-center gap-1">
+                <i :class="form.id ? 'ti ti-device-floppy' : 'ti ti-plus'"></i>
+                [[ form.id ? 'Actualizar' : 'Guardar' ]]
+            </button>
+            <button v-if="form.id" @click="resetForm"
+                    class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition">
+                Cancelar
+            </button>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <table class="w-full">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th @click="setSort('name')" class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none hover:text-gray-700">
+                        Nombre
+                        <i v-if="sortKey === 'name'" :class="sortDir === 'asc' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'" class="inline-block ml-1"></i>
+                    </th>
+                    <th @click="setSort('weekday')" class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none hover:text-gray-700">
+                        Día
+                        <i v-if="sortKey === 'weekday'" :class="sortDir === 'asc' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'" class="inline-block ml-1"></i>
+                    </th>
+                    <th @click="setSort('startTime')" class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none hover:text-gray-700">
+                        Inicio
+                        <i v-if="sortKey === 'startTime'" :class="sortDir === 'asc' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'" class="inline-block ml-1"></i>
+                    </th>
+                    <th @click="setSort('endTime')" class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none hover:text-gray-700">
+                        Fin
+                        <i v-if="sortKey === 'endTime'" :class="sortDir === 'asc' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'" class="inline-block ml-1"></i>
+                    </th>
+                    <th @click="setSort('isActive')" class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none hover:text-gray-700">
+                        Estado
+                        <i v-if="sortKey === 'isActive'" :class="sortDir === 'asc' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'" class="inline-block ml-1"></i>
+                    </th>
+                    <th class="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                <tr v-for="event in sorted(recurringEvents)" :key="event.id" class="hover:bg-gray-50">
+                    <td class="px-4 py-3 text-sm font-medium text-gray-800">[[ event.name ]]</td>
+                    <td class="px-4 py-3 text-sm text-gray-600">[[ weekdayName(event.weekday) ]]</td>
+                    <td class="px-4 py-3 text-sm text-gray-600">[[ event.startTime ]]</td>
+                    <td class="px-4 py-3 text-sm text-gray-600">[[ event.endTime ]]</td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-0.5 rounded-full text-xs font-medium"
+                              :class="event.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'">
+                            [[ event.isActive ? 'Activo' : 'Inactivo' ]]
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                        <div class="flex items-center justify-center gap-1">
+                            <button @click="editRecurring(event)"
+                                    class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Editar">
+                                <i class="ti ti-edit"></i>
+                            </button>
+                            <button v-if="event.isActive" @click="deactivateEvent(event)"
+                                    class="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition" title="Desactivar">
+                                <i class="ti ti-x"></i>
+                            </button>
+                            <button v-else @click="activateEvent(event)"
+                                    class="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition" title="Activar">
+                                <i class="ti ti-check"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                <tr v-if="recurringEvents.length === 0">
+                    <td colspan="6" class="px-4 py-8 text-center text-gray-400 text-sm">
+                        <i class="ti ti-repeat text-3xl block mb-2"></i>
+                        No hay eventos recurrentes configurados
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block vueData %}
+<script>
+const weekdayNames = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+
+const pageData = {
+    recurringEvents: JSON.parse(document.getElementById('recurringEvents').textContent),
+    eventTypes: JSON.parse(document.getElementById('eventTypes').textContent),
+    form: {
+        id: null,
+        name: '',
+        weekday: '',
+        startTime: '',
+        endTime: '',
+        eventType: '',
+        status: null
+    },
+    sortKey: '',
+    sortDir: 'asc',
+    error: ''
+}
+</script>
+{% endblock %}
+
+{% block vueMethods %}
+<script>
+const pageMethods = {
+    weekdayName(day) { return weekdayNames[day] || 'Desconocido' },
+    async onMounted() {
+        await this.loadRecurring()
+    },
+    async loadRecurring() {
+        const data = await this.apiRequest('/api/recurringEvents/')
+        if (data) this.recurringEvents = data
+    },
+    async saveRecurring() {
+        let url = '/api/recurringEvents/'
+        let method = 'POST'
+        if (this.form.id) {
+            url += this.form.id + '/'
+            method = 'PATCH'
+        } else {
+            this.form.status = 1
+        }
+        const data = await this.apiRequest(url, {
+            method,
+            body: JSON.stringify(this.form)
+        })
+        if (!data) return
+        this.resetForm()
+        await this.loadRecurring()
+    },
+        editRecurring(event) {
+            this.form = {
+                id: event.id,
+                name: event.name,
+                weekday: event.weekday ?? '', 
+                startTime: event.startTime,
+                endTime: event.endTime,
+                eventType: event.eventType ?? '',
+                status: event.status
+            }
+        },
+    async deactivateEvent(event) {
+        if (!confirm('¿Desactivar este evento recurrente?')) return
+        const data = await this.apiRequest(`/api/recurringEvents/${event.id}/deactivate/`, { method: 'PATCH' })
+        if (!data) return
+        await this.loadRecurring()
+    },
+    async activateEvent(event) {
+        if (!confirm('¿Activar este evento recurrente?')) return
+        const data = await this.apiRequest(`/api/recurringEvents/${event.id}/activate/`, { method: 'PATCH' })
+        if (!data) return
+        await this.loadRecurring()
+    },
+    resetForm() {
+        this.form = { id: null, name: '', weekday: '', startTime: '', endTime: '', eventType: '', status: null }
+    },
+    setSort(key) {
+        if (this.sortKey === key) {
+            this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc'
+        } else {
+            this.sortKey = key
+            this.sortDir = 'asc'
+        }
+    },
+    sorted(arr) {
+        if (!this.sortKey || !arr) return arr
+        const sorted = [...arr]
+        sorted.sort((a, b) => {
+            let valA = this.getNestedValue(a, this.sortKey)
+            let valB = this.getNestedValue(b, this.sortKey)
+            if (valA == null) valA = ''
+            if (valB == null) valB = ''
+            if (typeof valA === 'string') valA = valA.toLowerCase()
+            if (typeof valB === 'string') valB = valB.toLowerCase()
+            if (valA < valB) return this.sortDir === 'asc' ? -1 : 1
+            if (valA > valB) return this.sortDir === 'asc' ? 1 : -1
+            return 0
+        })
+        return sorted
+    },
+    getNestedValue(obj, path) {
+        return path.split('.').reduce((o, p) => o ? o[p] : '', obj)
+    },
+}
+</script>
+{% endblock %}

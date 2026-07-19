@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>AttendCare — Kiosko</title>
+    <script src="https://unpkg.com/vue@3"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" rel="stylesheet" />
+
+    <style>
+        * { user-select: none; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; }
+        .pin-btn { transition: all 0.1s; }
+        .pin-btn:active { transform: scale(0.95); background: #e5e7eb; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .pulse-dot { animation: pulse 1s infinite; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-600 to-indigo-800 text-white">
+
+<div id="app" class="min-h-screen w-screen flex flex-col items-center justify-center relative">
+
+    <!-- Welcome Screen -->
+    <template v-if="step === 'welcome'">
+        <div class="text-center fade-in">
+            <div class="w-24 h-24 bg-white/20 rounded-3xl flex items-center justify-center mx-auto mb-6 backdrop-blur-sm">
+                <i class="ti ti-fingerprint text-6xl"></i>
+            </div>
+            <h1 class="text-4xl font-bold mb-2">AttendCare</h1>
+            <p class="text-xl text-white/70 mb-10">Registro de asistencia</p>
+            <button @click="goToPin"
+                    class="bg-white text-blue-600 px-10 py-4 rounded-2xl text-xl font-semibold hover:bg-blue-50 transition shadow-lg active:scale-95">
+                <i class="ti ti-fingerprint mr-2"></i>
+                Tocar para iniciar
+            </button>
+        </div>
+    </template>
+
+    <!-- PIN Screen -->
+    <template v-if="step === 'pin'">
+        <div class="w-full max-w-sm mx-auto fade-in">
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <i class="ti ti-lock text-3xl"></i>
+                </div>
+                <h2 class="text-2xl font-bold">Ingrese su PIN</h2>
+                <p class="text-white/60 mt-1">Ingrese su código personal</p>
+            </div>
+
+            <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-6">
+                <!-- PIN Dots -->
+                <div class="flex justify-center gap-3 mb-6">
+                    <div v-for="i in 5" :key="i"
+                         class="w-4 h-4 rounded-full transition-all duration-150"
+                         :class="pin.length >= i ? 'bg-white scale-110' : 'bg-white/30'">
+                    </div>
+                </div>
+
+                <div v-if="pinError" class="text-red-300 text-center mb-4 text-sm bg-red-500/20 py-2 rounded-lg">
+                    <i class="ti ti-alert-circle mr-1"></i> [[ pinError ]]
+                </div>
+
+                <!-- Num Pad -->
+                <div class="grid grid-cols-3 gap-3">
+                    <button v-for="n in [1,2,3,4,5,6,7,8,9]"
+                            @click="pressDigit(n)"
+                            class="pin-btn bg-white/20 hover:bg-white/30 rounded-2xl py-5 text-2xl font-bold backdrop-blur-sm active:bg-white/40">
+                        [[ n ]]
+                    </button>
+                    <div></div>
+                    <button @click="pressDigit(0)"
+                            class="pin-btn bg-white/20 hover:bg-white/30 rounded-2xl py-5 text-2xl font-bold backdrop-blur-sm active:bg-white/40">
+                        0
+                    </button>
+                    <button @click="deleteDigit"
+                            class="pin-btn bg-white/10 hover:bg-white/20 rounded-2xl py-5 text-xl backdrop-blur-sm active:bg-white/30">
+                        <i class="ti ti-arrow-back-up"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Select Event Screen -->
+    <template v-if="step === 'select-event'">
+        <div class="w-full max-w-lg mx-auto fade-in p-4 self-start overflow-y-auto max-h-screen py-8">
+            <div class="text-center mb-6">
+                <h2 class="text-2xl font-bold">Seleccione el evento</h2>
+                <p class="text-white/60">[[ serverName ]], elige a qué evento asistirás</p>
+            </div>
+
+            <div class="space-y-3">
+                <div v-for="ev in activeEvents"
+                        :key="ev.eventId"
+                        class="w-full bg-white/10 backdrop-blur-sm rounded-2xl overflow-hidden">
+                    <div class="p-5">
+                        <div class="flex justify-between items-center mb-3">
+                            <div>
+                                <h3 class="text-lg font-semibold">[[ ev.name ]]</h3>
+                                <p class="text-white/50 text-sm">[[ ev.type ]]</p>
+                            </div>
+                            <div v-if="ev.alreadyCheckedOut" class="bg-gray-500/30 text-gray-300 px-3 py-1 rounded-full text-sm">
+                                <i class="ti ti-logout"></i> Salida registrada
+                            </div>
+                            <div v-else-if="ev.alreadyRegistered" class="bg-green-500/30 text-green-300 px-3 py-1 rounded-full text-sm">
+                                <i class="ti ti-check"></i> Ingreso registrado
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button v-if="!ev.alreadyRegistered"
+                                    @click="selectEvent(ev)"
+                                    class="flex-1 bg-blue-500/30 hover:bg-blue-500/40 rounded-xl py-3 text-sm font-medium transition active:scale-[0.98]">
+                                <i class="ti ti-login mr-1"></i> Registrar ingreso
+                            </button>
+                            <button v-if="ev.alreadyRegistered && !ev.alreadyCheckedOut && ev.canCheckout"
+                                    @click="checkOut(ev)"
+                                    class="flex-1 bg-yellow-500/30 hover:bg-yellow-500/40 rounded-xl py-3 text-sm font-medium transition active:scale-[0.98]">
+                                <i class="ti ti-logout mr-1"></i> Registrar salida
+                            </button>
+                            <p v-else-if="ev.alreadyRegistered && !ev.alreadyCheckedOut && !ev.canCheckout"
+                               class="flex-1 text-white/40 text-sm text-center py-3">
+                                <i class="ti ti-clock mr-1"></i> Espere para registrar salida
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div v-if="activeEvents.length === 0" class="text-center py-10 text-white/50">
+                <i class="ti ti-calendar-off text-4xl mb-3"></i>
+                <p>No hay eventos activos disponibles</p>
+            </div>
+
+            <button @click="goToWelcome" class="mt-6 text-white/50 hover:text-white/80 text-sm mx-auto block">
+                <i class="ti ti-arrow-left mr-1"></i> Volver
+            </button>
+        </div>
+    </template>
+
+    <!-- Select Ministry Screen -->
+    <template v-if="step === 'select-ministry'">
+        <div class="w-full max-w-sm mx-auto fade-in p-4">
+            <div class="text-center mb-6">
+                <h2 class="text-2xl font-bold">Seleccione su ministerio</h2>
+                <p class="text-white/60">[[ selectedEvent.name ]]</p>
+            </div>
+
+            <div class="space-y-3">
+                <button v-for="m in selectedMinistries"
+                        :key="m.id"
+                        @click="confirmAttendance(m.id)"
+                        class="w-full bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-2xl p-5 text-center text-lg font-medium transition active:scale-[0.98]">
+                    [[ m.name ]]
+                </button>
+            </div>
+
+            <button @click="step = 'select-event'" class="mt-6 text-white/50 hover:text-white/80 text-sm mx-auto block">
+                <i class="ti ti-arrow-left mr-1"></i> Volver
+            </button>
+        </div>
+    </template>
+
+    <!-- Confirmation Screen -->
+    <template v-if="step === 'confirmation'">
+        <div class="text-center fade-in">
+            <div class="w-24 h-24 bg-green-500/30 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i class="ti ti-circle-check text-6xl text-green-300"></i>
+            </div>
+            <template v-if="confirmationType === 'checkout'">
+                <h2 class="text-3xl font-bold mb-2">¡Salida registrada!</h2>
+                <p class="text-xl text-white/80 mb-1">[[ serverName ]]</p>
+                <p class="text-white/50">Tu salida ha sido registrada correctamente</p>
+            </template>
+            <template v-else>
+                <h2 class="text-3xl font-bold mb-2">¡Registrado!</h2>
+                <p class="text-xl text-white/80 mb-1">[[ serverName ]]</p>
+                <p class="text-white/50">[[ registerTime ]]</p>
+            </template>
+            <p class="mt-6 text-white/40 text-sm">Volviendo al inicio...</p>
+        </div>
+    </template>
+
+    <!-- Error Screen -->
+    <template v-if="step === 'error-screen'">
+        <div class="text-center fade-in">
+            <div class="w-24 h-24 bg-red-500/30 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i class="ti ti-x text-6xl text-red-300"></i>
+            </div>
+            <h2 class="text-2xl font-bold mb-2">Error</h2>
+            <p class="text-white/70">[[ errorMessage ]]</p>
+            <p class="mt-6 text-white/40 text-sm">Volviendo al inicio...</p>
+        </div>
+    </template>
+</div>
+
+<script>
+const { createApp } = Vue
+
+createApp({
+    delimiters: ['[[', ']]'],
+    data() {
+        return {
+            step: 'welcome',
+            pin: '',
+            pinError: '',
+            serverId: null,
+            serverName: '',
+            serverMinistries: [],
+            activeEvents: [],
+            selectedEvent: null,
+            selectedMinistries: [],
+            registerTime: '',
+            confirmationType: '',
+            errorMessage: '',
+            autoReturnTimer: null,
+            inactivityTimer: null,
+            MAX_ATTEMPTS: 5,
+        }
+    },
+    methods: {
+        goToWelcome() {
+            this.step = 'welcome'
+            this.confirmationType = ''
+            this.selectedEvent = null
+            this.resetInactivityTimer()
+        },
+        goToPin() {
+            this.pin = ''
+            this.pinError = ''
+            this.step = 'pin'
+            this.resetInactivityTimer()
+        },
+        pressDigit(n) {
+            if (this.pin.length >= 5) return
+            this.pin += String(n)
+            this.pinError = ''
+            if (this.pin.length === 5) {
+                setTimeout(() => this.authenticate(), 200)
+            }
+            this.resetInactivityTimer()
+        },
+        deleteDigit() {
+            this.pin = this.pin.slice(0, -1)
+            this.pinError = ''
+            this.resetInactivityTimer()
+        },
+        async authenticate() {
+            const res = await fetch('/api/kiosko/auth/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pin: this.pin })
+            })
+
+            const data = await res.json()
+
+            if (!res.ok) {
+                if (res.status === 429) {
+                    this.pinError = 'Demasiados intentos. Espere 5 minutos.'
+                } else {
+                    this.pinError = 'PIN incorrecto. Intente de nuevo.'
+                }
+                this.pin = ''
+                return
+            }
+
+            this.serverId = data.serverId
+            this.serverName = `${data.firstName} ${data.lastName}`
+            this.serverMinistries = data.ministries
+            await this.loadActiveEvents()
+        },
+        async loadActiveEvents() {
+            const res = await fetch(`/api/kiosko/active-events/?serverId=${this.serverId}`)
+            const data = await res.json()
+
+            if (!res.ok) {
+                this.showError('Error al cargar eventos')
+                return
+            }
+
+            this.activeEvents = data
+
+            if (data.length === 0) {
+                this.showError('No hay eventos activos en este momento')
+                return
+            }
+
+            if (data.length === 1 && data[0].alreadyRegistered && data[0].alreadyCheckedOut) {
+                this.showError('Ya tienes registrada tu asistencia a este evento')
+                return
+            }
+
+            if (data.length === 1 && data[0].participantMinistries.length === 1 && !data[0].alreadyRegistered) {
+                this.selectedEvent = data[0]
+                this.confirmAttendance(data[0].participantMinistries[0].id)
+                return
+            }
+
+            this.step = 'select-event'
+            this.resetInactivityTimer()
+        },
+        selectEvent(ev) {
+            this.selectedEvent = ev
+            this.selectedMinistries = ev.participantMinistries
+
+            if (ev.participantMinistries.length === 1) {
+                this.confirmAttendance(ev.participantMinistries[0].id)
+                return
+            }
+
+            this.step = 'select-ministry'
+            this.resetInactivityTimer()
+        },
+        async confirmAttendance(ministryId) {
+            const res = await fetch('/api/kiosko/register/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    serverId: this.serverId,
+                    eventId: this.selectedEvent.eventId,
+                    ministryId: ministryId,
+                })
+            })
+
+            const data = await res.json()
+
+            if (!res.ok) {
+                this.showError(data.error || 'Error al registrar asistencia')
+                return
+            }
+
+            this.registerTime = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
+            this.confirmationType = 'checkin'
+            this.step = 'confirmation'
+            this.scheduleAutoReturn(5)
+        },
+        async checkOut(ev) {
+            const res = await fetch('/api/kiosko/checkout/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    serverId: this.serverId,
+                    eventId: ev.eventId,
+                })
+            })
+
+            const data = await res.json()
+
+            if (!res.ok) {
+                this.showError(data.error || 'Error al registrar salida')
+                return
+            }
+
+            this.confirmationType = 'checkout'
+            this.step = 'confirmation'
+            this.scheduleAutoReturn(3)
+        },
+        showError(msg) {
+            this.errorMessage = msg
+            this.step = 'error-screen'
+            this.scheduleAutoReturn(5)
+        },
+        scheduleAutoReturn(seconds) {
+            if (this.autoReturnTimer) clearTimeout(this.autoReturnTimer)
+            this.autoReturnTimer = setTimeout(() => {
+                this.goToWelcome()
+            }, seconds * 1000)
+        },
+        resetInactivityTimer() {
+            if (this.inactivityTimer) clearTimeout(this.inactivityTimer)
+            if (this.step !== 'welcome' && this.step !== 'confirmation' && this.step !== 'error-screen') {
+                this.inactivityTimer = setTimeout(() => {
+                    this.goToWelcome()
+                }, 30000)
+            }
+        }
+    },
+    mounted() {
+        if (document.documentElement.requestFullscreen) {
+            document.documentElement.requestFullscreen().catch(() => {})
+        }
+        window.addEventListener('popstate', (e) => {
+            history.pushState(null, '', window.location.href)
+        })
+        history.pushState(null, '', window.location.href)
+    }
+}).mount('#app')
+</script>
+</body>
+</html>
