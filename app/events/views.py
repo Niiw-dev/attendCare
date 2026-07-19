@@ -100,12 +100,20 @@ class EventViewSet(viewsets.ModelViewSet):
                 assignment.delete()
                 return Response({'message': 'Asignación eliminada'})
 
-    @action(detail=True, methods=['get', 'post'])
+    @action(detail=True, methods=['get', 'post', 'patch'])
     def reconcile(self, request, pk=None):
         event = self.get_object()
 
-        if event.status.code != 'FINALIZADO':
-            return Response({'error': 'Solo se puede reconciliar eventos finalizados'}, status=status.HTTP_400_BAD_REQUEST)
+        if event.status.code not in ('FINALIZADO', 'RECONCILIADO'):
+            return Response({'error': 'Solo se puede reconciliar eventos finalizados o reconciliados'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if request.method == 'PATCH':
+            old_reconciliation = Reconciliation.objects.filter(event=event).first()
+            if old_reconciliation:
+                old_reconciliation.delete()
+            event.status = EventStatus.objects.get(code='FINALIZADO')
+            event.save(update_fields=['status'])
+            return Response({'message': 'Reconciliación eliminada, puede reconciliar de nuevo'})
 
         if Reconciliation.objects.filter(event=event).exists():
             return Response({'error': 'El evento ya fue reconciliado'}, status=status.HTTP_400_BAD_REQUEST)
@@ -147,14 +155,36 @@ class EventViewSet(viewsets.ModelViewSet):
             return Response(preview)
 
         if request.method == 'POST':
-            preview_data = request.data.get('preview', [])
+            assignments = Assignment.objects.filter(event=event).select_related('server', 'ministry')
+            attendances = Attendance.objects.filter(event=event).select_related('server')
+
+            attendance_map = {a.server_id: a for a in attendances}
+            assigned_ids = set(a.server_id for a in assignments)
+            attended_ids = set(attendance_map.keys())
+            volunteer_ids = attended_ids - assigned_ids
+
             reconciliation = Reconciliation.objects.create(event=event, executedBy=request.user)
 
-            for item in preview_data:
+            for a in assignments:
+                att = attendance_map.get(a.server_id)
+                if att is not None and att.checkOutTime is not None:
+                    classification = 'ASSIGNED'
+                elif att is not None:
+                    classification = 'INCOMPLETE'
+                else:
+                    classification = 'ABSENT'
                 ReconciliationDetail.objects.create(
                     reconciliation=reconciliation,
-                    server_id=item['serverId'],
-                    classification=item['classification'],
+                    server=a.server,
+                    classification=classification,
+                )
+
+            for a in attendances.filter(server_id__in=volunteer_ids):
+                classification = 'VOLUNTEER' if a.checkOutTime is not None else 'INCOMPLETE'
+                ReconciliationDetail.objects.create(
+                    reconciliation=reconciliation,
+                    server=a.server,
+                    classification=classification,
                 )
 
             event.status = EventStatus.objects.get(code='RECONCILIADO')
@@ -165,7 +195,7 @@ class EventViewSet(viewsets.ModelViewSet):
                 table='Reconciliation',
                 recordId=reconciliation.id,
                 performedBy=str(request.user),
-                details={'eventId': event.id, 'eventName': event.name, 'totalServers': len(preview_data)},
+                details={'eventId': event.id, 'eventName': event.name},
             )
 
             return Response({'message': 'Reconciliación ejecutada exitosamente', 'id': reconciliation.id})
