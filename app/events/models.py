@@ -125,6 +125,7 @@ class Attendance(models.Model):
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='attendances')
     ministry = models.ForeignKey(Ministry, on_delete=models.CASCADE)
     timestamp = models.DateTimeField(auto_now_add=True)
+    checkOutTime = models.DateTimeField(null=True, blank=True)
     integrityHash = models.CharField(max_length=128, editable=False)
 
     class Meta:
@@ -135,7 +136,9 @@ class Attendance(models.Model):
 
     def save(self, *args, **kwargs):
         import hashlib
-        raw = f'{self.server_id}:{self.event_id}:{self.timestamp or timezone.now().isoformat()}'
+        ts = (self.timestamp or timezone.now()).isoformat()
+        co = self.checkOutTime.isoformat() if self.checkOutTime else ''
+        raw = f'{self.server_id}:{self.event_id}:{ts}:{co}'
         self.integrityHash = hashlib.sha256(raw.encode()).hexdigest()
         super().save(*args, **kwargs)
 
@@ -170,6 +173,7 @@ class ReconciliationDetail(models.Model):
         ('ASSIGNED', 'Asistió (asignado)'),
         ('VOLUNTEER', 'Voluntario'),
         ('ABSENT', 'Ausente'),
+        ('INCOMPLETE', 'Ingresó sin registrar salida'),
         ('REPLACEMENT', 'Reemplazó'),
     ]
 

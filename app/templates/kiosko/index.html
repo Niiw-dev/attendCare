@@ -10,7 +10,7 @@
 
     <style>
         * { user-select: none; -webkit-tap-highlight-color: transparent; }
-        body { margin: 0; overflow: hidden; }
+        body { margin: 0; }
         .pin-btn { transition: all 0.1s; }
         .pin-btn:active { transform: scale(0.95); background: #e5e7eb; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -21,7 +21,7 @@
 </head>
 <body class="bg-gradient-to-br from-blue-600 to-indigo-800 text-white">
 
-<div id="app" class="h-screen w-screen flex flex-col items-center justify-center relative overflow-hidden">
+<div id="app" class="min-h-screen w-screen flex flex-col items-center justify-center relative">
 
     <!-- Welcome Screen -->
     <template v-if="step === 'welcome'">
@@ -86,29 +86,47 @@
 
     <!-- Select Event Screen -->
     <template v-if="step === 'select-event'">
-        <div class="w-full max-w-lg mx-auto fade-in p-4">
+        <div class="w-full max-w-lg mx-auto fade-in p-4 self-start overflow-y-auto max-h-screen py-8">
             <div class="text-center mb-6">
                 <h2 class="text-2xl font-bold">Seleccione el evento</h2>
                 <p class="text-white/60">[[ serverName ]], elige a qué evento asistirás</p>
             </div>
 
             <div class="space-y-3">
-                <button v-for="ev in activeEvents"
+                <div v-for="ev in activeEvents"
                         :key="ev.eventId"
-                        @click="selectEvent(ev)"
-                        class="w-full bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-2xl p-5 text-left transition active:scale-[0.98]"
-                        :class="{'opacity-50': ev.alreadyRegistered}">
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <h3 class="text-lg font-semibold">[[ ev.name ]]</h3>
-                            <p class="text-white/50 text-sm">[[ ev.type ]]</p>
+                        class="w-full bg-white/10 backdrop-blur-sm rounded-2xl overflow-hidden">
+                    <div class="p-5">
+                        <div class="flex justify-between items-center mb-3">
+                            <div>
+                                <h3 class="text-lg font-semibold">[[ ev.name ]]</h3>
+                                <p class="text-white/50 text-sm">[[ ev.type ]]</p>
+                            </div>
+                            <div v-if="ev.alreadyCheckedOut" class="bg-gray-500/30 text-gray-300 px-3 py-1 rounded-full text-sm">
+                                <i class="ti ti-logout"></i> Salida registrada
+                            </div>
+                            <div v-else-if="ev.alreadyRegistered" class="bg-green-500/30 text-green-300 px-3 py-1 rounded-full text-sm">
+                                <i class="ti ti-check"></i> Ingreso registrado
+                            </div>
                         </div>
-                        <div v-if="ev.alreadyRegistered" class="bg-green-500/30 text-green-300 px-3 py-1 rounded-full text-sm">
-                            <i class="ti ti-check"></i> Registrado
+                        <div class="flex gap-2">
+                            <button v-if="!ev.alreadyRegistered"
+                                    @click="selectEvent(ev)"
+                                    class="flex-1 bg-blue-500/30 hover:bg-blue-500/40 rounded-xl py-3 text-sm font-medium transition active:scale-[0.98]">
+                                <i class="ti ti-login mr-1"></i> Registrar ingreso
+                            </button>
+                            <button v-if="ev.alreadyRegistered && !ev.alreadyCheckedOut && ev.canCheckout"
+                                    @click="checkOut(ev)"
+                                    class="flex-1 bg-yellow-500/30 hover:bg-yellow-500/40 rounded-xl py-3 text-sm font-medium transition active:scale-[0.98]">
+                                <i class="ti ti-logout mr-1"></i> Registrar salida
+                            </button>
+                            <p v-else-if="ev.alreadyRegistered && !ev.alreadyCheckedOut && !ev.canCheckout"
+                               class="flex-1 text-white/40 text-sm text-center py-3">
+                                <i class="ti ti-clock mr-1"></i> Espere para registrar salida
+                            </p>
                         </div>
-                        <i v-else class="ti ti-chevron-right text-white/40 text-xl"></i>
                     </div>
-                </button>
+                </div>
             </div>
 
             <div v-if="activeEvents.length === 0" class="text-center py-10 text-white/50">
@@ -151,9 +169,16 @@
             <div class="w-24 h-24 bg-green-500/30 rounded-full flex items-center justify-center mx-auto mb-6">
                 <i class="ti ti-circle-check text-6xl text-green-300"></i>
             </div>
-            <h2 class="text-3xl font-bold mb-2">¡Registrado!</h2>
-            <p class="text-xl text-white/80 mb-1">[[ serverName ]]</p>
-            <p class="text-white/50">[[ registerTime ]]</p>
+            <template v-if="confirmationType === 'checkout'">
+                <h2 class="text-3xl font-bold mb-2">¡Salida registrada!</h2>
+                <p class="text-xl text-white/80 mb-1">[[ serverName ]]</p>
+                <p class="text-white/50">Tu salida ha sido registrada correctamente</p>
+            </template>
+            <template v-else>
+                <h2 class="text-3xl font-bold mb-2">¡Registrado!</h2>
+                <p class="text-xl text-white/80 mb-1">[[ serverName ]]</p>
+                <p class="text-white/50">[[ registerTime ]]</p>
+            </template>
             <p class="mt-6 text-white/40 text-sm">Volviendo al inicio...</p>
         </div>
     </template>
@@ -188,6 +213,7 @@ createApp({
             selectedEvent: null,
             selectedMinistries: [],
             registerTime: '',
+            confirmationType: '',
             errorMessage: '',
             autoReturnTimer: null,
             inactivityTimer: null,
@@ -197,6 +223,8 @@ createApp({
     methods: {
         goToWelcome() {
             this.step = 'welcome'
+            this.confirmationType = ''
+            this.selectedEvent = null
             this.resetInactivityTimer()
         },
         goToPin() {
@@ -259,7 +287,7 @@ createApp({
                 return
             }
 
-            if (data.length === 1 && data[0].alreadyRegistered) {
+            if (data.length === 1 && data[0].alreadyRegistered && data[0].alreadyCheckedOut) {
                 this.showError('Ya tienes registrada tu asistencia a este evento')
                 return
             }
@@ -274,7 +302,6 @@ createApp({
             this.resetInactivityTimer()
         },
         selectEvent(ev) {
-            if (ev.alreadyRegistered) return
             this.selectedEvent = ev
             this.selectedMinistries = ev.participantMinistries
 
@@ -305,8 +332,30 @@ createApp({
             }
 
             this.registerTime = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
+            this.confirmationType = 'checkin'
             this.step = 'confirmation'
             this.scheduleAutoReturn(5)
+        },
+        async checkOut(ev) {
+            const res = await fetch('/api/kiosko/checkout/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    serverId: this.serverId,
+                    eventId: ev.eventId,
+                })
+            })
+
+            const data = await res.json()
+
+            if (!res.ok) {
+                this.showError(data.error || 'Error al registrar salida')
+                return
+            }
+
+            this.confirmationType = 'checkout'
+            this.step = 'confirmation'
+            this.scheduleAutoReturn(3)
         },
         showError(msg) {
             this.errorMessage = msg

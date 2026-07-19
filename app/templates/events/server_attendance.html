@@ -36,6 +36,10 @@
             <p class="text-xs text-gray-500 mt-1">Reemplazos</p>
         </div>
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-center">
+            <p class="text-2xl font-bold text-amber-600">[[ report.totalIncomplete ]]</p>
+            <p class="text-xs text-gray-500 mt-1">Sin salida</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-center">
             <p class="text-2xl font-bold" :class="report.attendanceRate >= 70 ? 'text-green-600' : report.attendanceRate >= 40 ? 'text-yellow-600' : 'text-red-600'">
                 [[ report.attendanceRate ]]%
             </p>
@@ -56,6 +60,8 @@
                 <tr>
                     <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Evento</th>
                     <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Fecha</th>
+                    <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Ingreso</th>
+                    <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Salida</th>
                     <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Clasificación</th>
                 </tr>
             </thead>
@@ -65,10 +71,19 @@
                         <a :href="'/events/' + h.eventId + '/detail/'" class="text-blue-600 hover:text-blue-800">[[ h.eventName ]]</a>
                     </td>
                     <td class="px-4 py-3 text-sm text-gray-600">[[ formatDate(h.eventDate) ]]</td>
+                    <td class="px-4 py-3 text-sm text-gray-400">
+                        <span v-if="h.checkIn">[[ formatTime(h.checkIn) ]]</span>
+                        <span v-else class="text-gray-300">—</span>
+                    </td>
+                    <td class="px-4 py-3 text-sm">
+                        <span v-if="h.checkOut" class="text-gray-400">[[ formatTime(h.checkOut) ]]</span>
+                        <span v-else class="text-amber-500 text-xs font-medium">Sin registrar</span>
+                    </td>
                     <td class="px-4 py-3">
                         <span class="px-2 py-0.5 rounded-full text-xs font-medium"
                               :class="{
                                   'bg-green-100 text-green-700': h.classification === 'ASSIGNED',
+                                  'bg-amber-100 text-amber-700': h.classification === 'INCOMPLETE',
                                   'bg-yellow-100 text-yellow-700': h.classification === 'REPLACEMENT',
                                   'bg-red-100 text-red-700': h.classification === 'ABSENT',
                                   'bg-purple-100 text-purple-700': h.classification === 'VOLUNTEER'
@@ -86,7 +101,8 @@
 {% block vueData %}
 <script>
 const classificationLabels = {
-    'ASSIGNED': 'Asistió',
+    'ASSIGNED': 'Completo',
+    'INCOMPLETE': 'Sin salida',
     'ABSENT': 'Ausente',
     'VOLUNTEER': 'Voluntario',
     'REPLACEMENT': 'Reemplazo',
@@ -108,6 +124,12 @@ const pageMethods = {
         if (!date) return ''
         return new Date(date).toLocaleDateString('es-ES', {
             year: 'numeric', month: 'long', day: 'numeric'
+        })
+    },
+    formatTime(date) {
+        if (!date) return ''
+        return new Date(date).toLocaleTimeString('es-ES', {
+            hour: '2-digit', minute: '2-digit'
         })
     },
     async fetchReport() {

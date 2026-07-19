@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
 {% block title %}Ministerios{% endblock %}
 {% block json_data %}
@@ -42,7 +42,8 @@
                 <label class="block text-xs font-medium text-gray-500 mb-1">Líder asignado</label>
                 <select v-model="form.leaderAssigned"
                         class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                    <option :value="null">Sin líder</option>
+                    <option value="" disabled selected>Seleccione...</option>
+                    <option value="none">Sin líder</option>
                     <option v-for="leader in leaders" :key="leader.id" :value="leader.id">
                         [[ leader.username ]]
                     </option>
@@ -68,7 +69,7 @@
                 <label class="block text-xs font-medium text-gray-500 mb-1">Filtrar por estado</label>
                 <select v-model="isActiveFilter" @change="fetchMinistries"
                         class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                    <option value="">Todos</option>
+                    <option value="" disabled selected>Seleccione...</option>
                     <option value="true">Activos</option>
                     <option value="false">Inactivos</option>
                 </select>
@@ -150,7 +151,7 @@ const pageData = {
         id: null,
         name: '',
         description: '',
-        leaderAssigned: null
+        leaderAssigned: ''
     },
     sortKey: '',
     sortDir: 'asc',
@@ -181,7 +182,7 @@ const pageMethods = {
             id: ministry.id,
             name: ministry.name,
             description: ministry.description,
-            leaderAssigned: ministry.leaderAssigned
+            leaderAssigned: ministry.leaderAssigned ?? 'none',
         }
     },
     resetForm() {
@@ -189,15 +190,17 @@ const pageMethods = {
             id: null,
             name: '',
             description: '',
-            leaderAssigned: null
+            leaderAssigned: ''
         }
     },
     async saveMinistry() {
         const url = this.form.id ? `/api/ministries/${this.form.id}/` : '/api/ministries/'
         const method = this.form.id ? 'PATCH' : 'POST'
+        const payload = { ...this.form }
+        if (payload.leaderAssigned === 'none') payload.leaderAssigned = null
         const data = await this.apiRequest(url, {
             method,
-            body: JSON.stringify(this.form)
+            body: JSON.stringify(payload)
         })
         if (!data) return
         this.resetForm()

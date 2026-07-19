@@ -7,7 +7,7 @@ from django.http import JsonResponse
 from django.utils import timezone
 from django.contrib.auth.hashers import check_password
 from django.db.models import Count, Q
-from datetime import timedelta
+from datetime import timedelta, datetime
 import json
 
 from .models import (Event, EventType, EventStatus, RecurringEvent, Assignment, EventMinistry,
@@ -15,7 +15,8 @@ from .models import (Event, EventType, EventStatus, RecurringEvent, Assignment, 
 from .serializers import (EventSerializer, EventTypeSerializer, EventStatusSerializer,
                           RecurringEventSerializer, AssignmentSerializer, AttendanceSerializer,
                           ReconciliationSerializer, ReconciliationDetailSerializer,
-                          AuditLogSerializer, KioskoAuthSerializer, KioskoRegisterSerializer)
+                           AuditLogSerializer, KioskoAuthSerializer, KioskoRegisterSerializer,
+                           KioskoCheckoutSerializer)
 from ministries.models import Ministry
 from ministries.serializers import MinistrySerializer
 from servers.models import Server
@@ -40,9 +41,7 @@ class EventViewSet(viewsets.ModelViewSet):
         if typeId:
             queryset = queryset.filter(type_id=typeId)
         if startDate:
-            queryset = queryset.filter(startDate__date__gte=startDate)
-        if endDate:
-            queryset = queryset.filter(endDate__date__lte=endDate)
+            queryset = queryset.filter(startDate__date=startDate)
 
         return queryset.order_by('-startDate')
 
@@ -115,13 +114,20 @@ class EventViewSet(viewsets.ModelViewSet):
             assignments = Assignment.objects.filter(event=event).select_related('server', 'ministry')
             attendances = Attendance.objects.filter(event=event).select_related('server')
 
+            attendance_map = {a.server_id: a for a in attendances}
             assigned_ids = set(a.server_id for a in assignments)
-            attended_ids = set(a.server_id for a in attendances)
+            attended_ids = set(attendance_map.keys())
             volunteer_ids = attended_ids - assigned_ids
 
             preview = []
             for a in assignments:
-                classification = 'ASSIGNED' if a.server_id in attended_ids else 'ABSENT'
+                att = attendance_map.get(a.server_id)
+                if att is not None and att.checkOutTime is not None:
+                    classification = 'ASSIGNED'
+                elif att is not None:
+                    classification = 'INCOMPLETE'
+                else:
+                    classification = 'ABSENT'
                 preview.append({
                     'serverId': a.server.id,
                     'serverName': f'{a.server.firstName} {a.server.lastName}',
@@ -130,11 +136,12 @@ class EventViewSet(viewsets.ModelViewSet):
                 })
 
             for a in attendances.filter(server_id__in=volunteer_ids):
+                classification = 'VOLUNTEER' if a.checkOutTime is not None else 'INCOMPLETE'
                 preview.append({
                     'serverId': a.server.id,
                     'serverName': f'{a.server.firstName} {a.server.lastName}',
                     'ministry': a.ministry.name,
-                    'classification': 'VOLUNTEER',
+                    'classification': classification,
                 })
 
             return Response(preview)
@@ -421,10 +428,11 @@ def kiosko_active_events(request):
         return Response({'error': 'Se requiere serverId'}, status=status.HTTP_400_BAD_REQUEST)
 
     now = timezone.now()
+    buffer = timedelta(minutes=30)
     events = Event.objects.filter(
         status__code='ACTIVO',
-        startDate__lte=now,
-        endDate__gte=now,
+        startDate__lte=now + buffer,
+        endDate__gte=now - buffer,
     ).select_related('type', 'status').prefetch_related('ministries')
 
     server = get_object_or_404(Server, id=server_id)
@@ -445,14 +453,24 @@ def kiosko_active_events(request):
             if not participant_ministries:
                 continue
 
-        has_attendance = Attendance.objects.filter(server_id=server_id, event=event).exists()
+        attendance = Attendance.objects.filter(server_id=server_id, event=event).first()
+
+        can_checkout = False
+        if attendance and attendance.checkOutTime is None:
+            elapsed = now - attendance.timestamp
+            duration = event.endDate - event.startDate
+            if duration.total_seconds() > 0:
+                can_checkout = elapsed >= duration * 0.7
 
         result.append({
             'eventId': event.id,
             'name': event.name,
             'type': event.type.name,
             'participantMinistries': participant_ministries,
-            'alreadyRegistered': has_attendance,
+            'alreadyRegistered': attendance is not None,
+            'alreadyCheckedOut': attendance.checkOutTime is not None if attendance else False,
+            'attendanceId': attendance.id if attendance else None,
+            'canCheckout': can_checkout,
         })
 
     return Response(result)
@@ -499,6 +517,58 @@ def kiosko_register(request):
     })
 
 
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def kiosko_checkout(request):
+    serializer = KioskoCheckoutSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+
+    server_id = serializer.validated_data['serverId']
+    event_id = serializer.validated_data['eventId']
+
+    event = get_object_or_404(Event, id=event_id)
+    server = get_object_or_404(Server, id=server_id)
+
+    if event.status.code not in ('ACTIVO', 'PROGRAMADO'):
+        return Response({'error': 'El evento no está activo'}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        attendance = Attendance.objects.get(server=server, event=event)
+    except Attendance.DoesNotExist:
+        return Response({'error': 'No tienes registro de ingreso a este evento'}, status=status.HTTP_400_BAD_REQUEST)
+
+    if attendance.checkOutTime is not None:
+        return Response({'error': 'Ya registraste tu salida de este evento'}, status=status.HTTP_400_BAD_REQUEST)
+
+    duration = event.endDate - event.startDate
+    if duration.total_seconds() > 0:
+        elapsed = timezone.now() - attendance.timestamp
+        if elapsed < duration * 0.7:
+            remaining = (duration * 0.7) - elapsed
+            minutes = int(remaining.total_seconds() // 60) + 1
+            return Response({
+                'error': f'Debe esperar aproximadamente {minutes} minuto(s) más para registrar su salida'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+    attendance.checkOutTime = timezone.now()
+    attendance.save()
+
+    AuditLog.objects.create(
+        action='ATTENDANCE_REGISTERED',
+        table='Attendance',
+        recordId=attendance.id,
+        performedBy=f'server:{server.id}',
+        details={'eventId': event.id, 'serverId': server.id, 'action': 'checkout'},
+    )
+
+    return Response({
+        'message': 'Salida registrada exitosamente',
+        'serverName': f'{server.firstName} {server.lastName}',
+        'eventName': event.name,
+        'checkOutTime': attendance.checkOutTime.isoformat(),
+    })
+
+
 # ─── REPORTES ────────────────────────────────────────────────────
 
 @api_view(['GET'])
@@ -519,9 +589,14 @@ def report_server_attendance(request, server_id):
     if end_date:
         reconciliations = reconciliations.filter(event__endDate__date__lte=end_date)
 
+    event_ids = [r.event_id for r in reconciliations]
+    attendances = Attendance.objects.filter(server=server, event_id__in=event_ids)
+    attendance_map = {a.event_id: a for a in attendances}
+
     total_assigned = 0
     total_attended = 0
     total_absent = 0
+    total_incomplete = 0
     total_volunteer = 0
     total_replacement = 0
     history = []
@@ -531,25 +606,31 @@ def report_server_attendance(request, server_id):
         if not detail:
             continue
 
-        if detail.classification in ('ASSIGNED', 'REPLACEMENT'):
-            total_assigned += 1
         if detail.classification == 'ASSIGNED':
+            total_assigned += 1
             total_attended += 1
+        elif detail.classification == 'INCOMPLETE':
+            total_incomplete += 1
         elif detail.classification == 'ABSENT':
             total_absent += 1
         elif detail.classification == 'VOLUNTEER':
             total_volunteer += 1
         elif detail.classification == 'REPLACEMENT':
             total_replacement += 1
+            total_attended += 1
 
+        att = attendance_map.get(r.event.id)
         history.append({
             'eventId': r.event.id,
             'eventName': r.event.name,
             'eventDate': r.event.startDate,
             'classification': detail.classification,
+            'checkIn': att.timestamp if att else None,
+            'checkOut': att.checkOutTime if att else None,
         })
 
-    attendance_rate = round((total_attended / total_assigned * 100), 1) if total_assigned > 0 else 0
+    total_assignments = total_assigned + total_incomplete + total_absent
+    attendance_rate = round((total_attended / total_assignments * 100), 1) if total_assignments > 0 else 0
 
     return Response({
         'serverId': server.id,
@@ -557,6 +638,7 @@ def report_server_attendance(request, server_id):
         'totalEvents': len(history),
         'totalAssigned': total_assigned,
         'totalAttended': total_attended,
+        'totalIncomplete': total_incomplete,
         'totalAbsent': total_absent,
         'totalVolunteer': total_volunteer,
         'totalReplacements': total_replacement,
@@ -592,12 +674,15 @@ def report_ministry_indicators(request, ministry_id):
                     'total': 0,
                     'attended': 0,
                     'absent': 0,
+                    'incomplete': 0,
                 }
             server_stats[sid]['total'] += 1
             if d.classification in ('ASSIGNED', 'REPLACEMENT'):
                 server_stats[sid]['attended'] += 1
             elif d.classification == 'ABSENT':
                 server_stats[sid]['absent'] += 1
+            elif d.classification == 'INCOMPLETE':
+                server_stats[sid]['incomplete'] += 1
 
     sorted_servers = sorted(server_stats.values(), key=lambda x: x['attended'], reverse=True)
     most_active = sorted_servers[:5] if sorted_servers else []
@@ -640,12 +725,16 @@ def report_general(request):
 
         total_assigned = 0
         total_attended = 0
+        total_incomplete = 0
         servers_set = set()
 
         for r in reconciliations:
             for d in r.details.all():
                 servers_set.add(d.server_id)
-                total_assigned += 1
+                if d.classification == 'INCOMPLETE':
+                    total_incomplete += 1
+                else:
+                    total_assigned += 1
                 if d.classification in ('ASSIGNED', 'REPLACEMENT'):
                     total_attended += 1
 

@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
 {% block title %}Eventos{% endblock %}
 {% block json_data %}
@@ -40,7 +40,7 @@
                 <label class="block text-xs font-medium text-gray-500 mb-1">Tipo</label>
                 <select v-model="form.type"
                         class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                    <option value="">Seleccione...</option>
+                    <option value="" disabled selected>Seleccione...</option>
                     <option v-for="type in eventTypes" :key="type.id" :value="type.id">
                         [[ type.name ]]
                     </option>
@@ -50,7 +50,7 @@
                 <label class="block text-xs font-medium text-gray-500 mb-1">Ministerio líder</label>
                 <select v-model="form.leaderMinistry"
                         class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                    <option value="">Seleccione...</option>
+                    <option value="" disabled selected>Seleccione...</option>
                     <option v-for="ministry in ministries" :key="ministry.id" :value="ministry.id">
                         [[ ministry.name ]]
                     </option>
@@ -70,10 +70,6 @@
                 <label class="block text-xs font-medium text-gray-500 mb-1">Ministerios participantes</label>
                 <select id="ministriesSelect" multiple
                         class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                    <option value="-1">Todos los ministerios</option>
-                    <option v-for="m in ministries" :key="m.id" :value="m.id">
-                        [[ m.name ]]
-                    </option>
                 </select>
             </div>
             <div class="md:col-span-3">
@@ -83,9 +79,6 @@
                 <p class="text-xs text-gray-400 mb-2">Se muestran servidores de los ministerios seleccionados</p>
                 <select id="serversSelect" multiple
                         class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                    <option v-for="s in filteredServers" :key="s.id" :value="s.id">
-                        [[ s.firstName ]] [[ s.lastName ]]
-                    </option>
                 </select>
                 <p v-if="selectedMinistryIds.length === 0" class="text-sm text-gray-400 italic mt-1">
                     Seleccione ministerios participantes para ver los servidores disponibles
@@ -114,7 +107,7 @@
                 <label class="block text-xs font-medium text-gray-500 mb-1">Filtrar por tipo</label>
                 <select v-model="typeFilter" @change="fetchEvents"
                         class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                    <option value="">Todos los tipos</option>
+                    <option value="" disabled selected>Seleccione...</option>
                     <option v-for="type in eventTypes" :key="type.id" :value="type.id">
                         [[ type.name ]]
                     </option>
@@ -124,7 +117,7 @@
                 <label class="block text-xs font-medium text-gray-500 mb-1">Filtrar por estado</label>
                 <select v-model="statusFilter" @change="fetchEvents"
                         class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                    <option value="">Todos los estados</option>
+                    <option value="" disabled selected>Seleccione...</option>
                     <option v-for="status in eventStatuses" :key="status.id" :value="status.id">
                         [[ status.name ]]
                     </option>
@@ -286,13 +279,16 @@ const pageMethods = {
         const data = await this.apiRequest('/api/servers/?isActive=true')
         if (data) this.servers = data
     },
-    initSelect2() {
+    refreshMinistriesSelect() {
         const vm = this
-        if ($('#ministriesSelect').data('select2')) {
-            $('#ministriesSelect').select2('destroy')
-        }
-        $('#ministriesSelect')
-            .select2({ width: '100%', placeholder: 'Seleccione ministerios' })
+        const $sel = $('#ministriesSelect')
+        if ($sel.data('select2')) $sel.select2('destroy')
+        $sel.empty()
+        $sel.append(new Option('Todos los ministerios', '-1'))
+        this.ministries.forEach(m => {
+            $sel.append(new Option(m.name, String(m.id)))
+        })
+        $sel.select2({ width: '100%', placeholder: 'Seleccione ministerios' })
             .on('change', function () {
                 const values = $(this).val() || []
                 let ids = values.map(Number)
@@ -302,26 +298,22 @@ const pageMethods = {
                     return
                 }
                 vm.selectedMinistryIds = ids
-                vm.$nextTick(() => vm.refreshServersSelect())
+                setTimeout(() => vm.refreshServersSelect(), 0)
             })
-        $('#ministriesSelect').val(vm.selectedMinistryIds).trigger('change')
-
-        if ($('#serversSelect').data('select2')) {
-            $('#serversSelect').select2('destroy')
-        }
+        $sel.val(vm.selectedMinistryIds.map(String)).trigger('change')
+    },
+    initSelect2() {
+        this.refreshMinistriesSelect()
         this.refreshServersSelect()
     },
     refreshServersSelect() {
         const vm = this
         const $sel = $('#serversSelect')
-        const prevVal = $sel.val() || []
         if ($sel.data('select2')) $sel.select2('destroy')
         $sel.empty()
-        const allOpt = new Option('Todos los servidores', '-1', false, prevVal.includes('-1'))
-        $sel.append(allOpt)
+        $sel.append(new Option('Todos los servidores', '-1'))
         this.filteredServers.forEach(s => {
-            const opt = new Option(s.firstName + ' ' + s.lastName, s.id, false, prevVal.includes(String(s.id)))
-            $sel.append(opt)
+            $sel.append(new Option(s.firstName + ' ' + s.lastName, String(s.id)))
         })
         $sel.select2({ width: '100%', placeholder: 'Seleccione servidores' })
             .on('change', function () {
@@ -334,7 +326,7 @@ const pageMethods = {
                 }
                 vm.selectedServerIds = ids
             })
-        $sel.trigger('change')
+        $sel.val(vm.selectedServerIds.map(String)).trigger('change')
     },
     toLocalDatetime(isoStr) {
         if (!isoStr) return ''
@@ -347,9 +339,9 @@ const pageMethods = {
         this.form = {
             id: event.id,
             name: event.name,
-            type: event.type,
-            status: event.status,
-            leaderMinistry: event.leaderMinistry,
+            type: event.type ?? '', 
+            status: event.status ?? '', 
+            leaderMinistry: event.leaderMinistry ?? '', 
             startDate: this.toLocalDatetime(event.startDate),
             endDate: this.toLocalDatetime(event.endDate),
         }

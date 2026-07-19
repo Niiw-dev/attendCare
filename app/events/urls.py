@@ -29,6 +29,7 @@ urlpatterns = [
     path('api/kiosko/auth/', kiosko_auth, name='kioskoAuth'),
     path('api/kiosko/active-events/', kiosko_active_events, name='kioskoActiveEvents'),
     path('api/kiosko/register/', kiosko_register, name='kioskoRegister'),
+    path('api/kiosko/checkout/', kiosko_checkout, name='kioskoCheckout'),
 
     # Reportes API
     path('api/reports/server/<int:server_id>/attendance/', report_server_attendance, name='reportServerAttendance'),

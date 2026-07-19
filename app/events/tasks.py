@@ -117,9 +117,14 @@ def auto_reconcile_events():
         details_to_create = []
         absent_servers = []
 
+        attendance_map = {a.server_id: a for a in attendances}
+
         for a in assignments:
-            if a.server_id in attended_ids:
+            att = attendance_map.get(a.server_id)
+            if att is not None and att.checkOutTime is not None:
                 classification = 'ASSIGNED'
+            elif att is not None:
+                classification = 'INCOMPLETE'
             else:
                 classification = 'ABSENT'
                 absent_servers.append(a)
@@ -130,12 +135,15 @@ def auto_reconcile_events():
                 classification=classification,
             ))
 
-        # Volunteers who filled in for absent assigned servers
+        # Volunteers who filled in for absent assigned servers (must have checked out)
         used_volunteers = set()
         for absent in absent_servers:
             absent_ministry = assigned_ministry.get(absent.server_id)
             for vid in volunteer_ids - used_volunteers:
                 if attended_ministry.get(vid) == absent_ministry:
+                    att = attendance_map.get(vid)
+                    if att is None or att.checkOutTime is None:
+                        continue
                     server_obj = next(a for a in attendances if a.server_id == vid).server
                     details_to_create.append(ReconciliationDetail(
                         reconciliation=reconciliation,
@@ -149,10 +157,11 @@ def auto_reconcile_events():
         # Remaining volunteers (not used as replacements)
         for a in attendances:
             if a.server_id in volunteer_ids - used_volunteers:
+                classification = 'VOLUNTEER' if a.checkOutTime is not None else 'INCOMPLETE'
                 details_to_create.append(ReconciliationDetail(
                     reconciliation=reconciliation,
                     server=a.server,
-                    classification='VOLUNTEER',
+                    classification=classification,
                 ))
 
         ReconciliationDetail.objects.bulk_create(details_to_create)
