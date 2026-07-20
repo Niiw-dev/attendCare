@@ -286,11 +286,7 @@ createApp({
             const data = await res.json()
 
             if (!res.ok) {
-                if (res.status === 429) {
-                    this.pinError = 'Demasiados intentos. Espere 5 minutos.'
-                } else {
-                    this.pinError = 'PIN incorrecto. Intente de nuevo.'
-                }
+                this.pinError = 'PIN incorrecto. Intente de nuevo.'
                 this.pin = ''
                 return
             }

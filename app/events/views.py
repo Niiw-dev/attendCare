@@ -425,14 +425,6 @@ def kiosko_auth(request):
 
     if not server:
         KioskoAttempt.objects.create(server_id=0, ipAddress=ip, successful=False)
-
-        recent_fails = KioskoAttempt.objects.filter(
-            ipAddress=ip, successful=False, timestamp__gte=timezone.now() - timedelta(minutes=5)
-        ).count()
-
-        if recent_fails >= 5:
-            return Response({'error': 'Demasiados intentos fallidos. Espere 5 minutos.'}, status=status.HTTP_429_TOO_MANY_REQUESTS)
-
         return Response({'error': 'PIN incorrecto'}, status=status.HTTP_401_UNAUTHORIZED)
 
     KioskoAttempt.objects.create(server=server, ipAddress=ip, successful=True)
