@@ -8,9 +8,9 @@
 {% block content %}
 
 <div>
-    <div class="flex justify-between items-center mb-6">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
-            <h1 class="text-2xl font-bold text-gray-800">Ministerios</h1>
+            <h1 class="text-xl sm:text-2xl font-bold text-gray-800">Ministerios</h1>
             <p class="text-gray-500">Gestión de ministerios de la iglesia</p>
         </div>
         <div class="flex gap-2">
@@ -27,7 +27,7 @@
 
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-6">
         <h3 class="font-semibold text-gray-800 mb-4">[[ form.id ? 'Editar ministerio' : 'Crear ministerio' ]]</h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
                 <label class="block text-xs font-medium text-gray-500 mb-1">Nombre</label>
                 <input v-model="form.name" type="text" placeholder="Nombre del ministerio"
@@ -52,7 +52,8 @@
         </div>
         <div class="flex gap-2 mt-4">
             <button @click="saveMinistry"
-                    class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition flex items-center gap-1">
+                    class="px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1"
+                    :class="form.id ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-emerald-600 text-white hover:bg-emerald-700'">
                 <i :class="form.id ? 'ti ti-device-floppy' : 'ti ti-plus'"></i>
                 [[ form.id ? 'Actualizar' : 'Crear' ]]
             </button>
@@ -64,78 +65,84 @@
     </div>
 
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-6">
-        <div class="flex flex-wrap gap-4 items-end">
-            <div>
+        <div class="flex flex-col sm:flex-row flex-wrap gap-4 items-end">
+            <div class="w-full sm:w-auto">
                 <label class="block text-xs font-medium text-gray-500 mb-1">Filtrar por estado</label>
                 <select v-model="isActiveFilter" @change="fetchMinistries"
-                        class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        class="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                     <option value="" disabled selected>Seleccione...</option>
                     <option value="true">Activos</option>
                     <option value="false">Inactivos</option>
                 </select>
             </div>
+            <button v-if="isActiveFilter" @click="clearFilters"
+                    class="w-full sm:w-auto px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition flex items-center gap-1">
+                <i class="ti ti-filter-off"></i> Limpiar filtros
+            </button>
         </div>
     </div>
 
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <table class="w-full">
-            <thead class="bg-gray-50">
-                <tr>
-                    <th @click="setSort('name')" class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none hover:text-gray-700">
-                        Nombre
-                        <i v-if="sortKey === 'name'" :class="sortDir === 'asc' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'" class="inline-block ml-1"></i>
-                    </th>
-                    <th @click="setSort('description')" class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none hover:text-gray-700">
-                        Descripción
-                        <i v-if="sortKey === 'description'" :class="sortDir === 'asc' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'" class="inline-block ml-1"></i>
-                    </th>
-                    <th @click="setSort('leaderName')" class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none hover:text-gray-700">
-                        Líder
-                        <i v-if="sortKey === 'leaderName'" :class="sortDir === 'asc' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'" class="inline-block ml-1"></i>
-                    </th>
-                    <th @click="setSort('isActive')" class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none hover:text-gray-700">
-                        Estado
-                        <i v-if="sortKey === 'isActive'" :class="sortDir === 'asc' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'" class="inline-block ml-1"></i>
-                    </th>
-                    <th class="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Acciones</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-                <tr v-for="ministry in sorted(ministries)" :key="ministry.id" class="hover:bg-gray-50">
-                    <td class="px-4 py-3 text-sm font-medium text-gray-800">[[ ministry.name ]]</td>
-                    <td class="px-4 py-3 text-sm text-gray-600">[[ ministry.description || 'Sin descripción' ]]</td>
-                    <td class="px-4 py-3 text-sm text-gray-600">[[ ministry.leaderName || 'Sin líder' ]]</td>
-                    <td class="px-4 py-3">
-                        <span class="px-2 py-0.5 rounded-full text-xs font-medium"
-                              :class="ministry.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'">
-                            [[ ministry.isActive ? 'Activo' : 'Inactivo' ]]
-                        </span>
-                    </td>
-                    <td class="px-4 py-3 text-center">
-                        <div class="flex items-center justify-center gap-1">
-                            <button @click="editMinistry(ministry)"
-                                    class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Editar">
-                                <i class="ti ti-edit"></i>
-                            </button>
-                            <button v-if="ministry.isActive" @click="deactivateMinistry(ministry)"
-                                    class="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition" title="Desactivar">
-                                <i class="ti ti-toggle-left"></i>
-                            </button>
-                            <button v-else @click="activateMinistry(ministry)"
-                                    class="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition" title="Activar">
-                                <i class="ti ti-toggle-right"></i>
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-                <tr v-if="ministries.length === 0">
-                    <td colspan="5" class="px-4 py-8 text-center text-gray-400 text-sm">
-                        <i class="ti ti-building-community text-3xl block mb-2"></i>
-                        No hay ministerios registrados
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+        <div class="overflow-x-auto">
+            <table class="w-full min-w-[500px]">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th @click="setSort('name')" class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none hover:text-gray-700">
+                            Nombre
+                            <i v-if="sortKey === 'name'" :class="sortDir === 'asc' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'" class="inline-block ml-1"></i>
+                        </th>
+                        <th @click="setSort('description')" class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none hover:text-gray-700">
+                            Descripción
+                            <i v-if="sortKey === 'description'" :class="sortDir === 'asc' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'" class="inline-block ml-1"></i>
+                        </th>
+                        <th @click="setSort('leaderName')" class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none hover:text-gray-700">
+                            Líder
+                            <i v-if="sortKey === 'leaderName'" :class="sortDir === 'asc' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'" class="inline-block ml-1"></i>
+                        </th>
+                        <th @click="setSort('isActive')" class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none hover:text-gray-700">
+                            Estado
+                            <i v-if="sortKey === 'isActive'" :class="sortDir === 'asc' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'" class="inline-block ml-1"></i>
+                        </th>
+                        <th class="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    <tr v-for="ministry in sorted(ministries)" :key="ministry.id" class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-sm font-medium text-gray-800">[[ ministry.name ]]</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">[[ ministry.description || 'Sin descripción' ]]</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">[[ ministry.leaderName || 'Sin líder' ]]</td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-0.5 rounded-full text-xs font-medium"
+                                  :class="ministry.isActive ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'">
+                                [[ ministry.isActive ? 'Activo' : 'Inactivo' ]]
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            <div class="flex items-center justify-center gap-1">
+                                <button @click="editMinistry(ministry)"
+                                        class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Editar">
+                                    <i class="ti ti-edit"></i>
+                                </button>
+                                <button v-if="ministry.isActive" @click="deactivateMinistry(ministry)"
+                                        class="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition" title="Desactivar">
+                                    <i class="ti ti-toggle-left"></i>
+                                </button>
+                                <button v-else @click="activateMinistry(ministry)"
+                                        class="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition" title="Activar">
+                                    <i class="ti ti-toggle-right"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr v-if="ministries.length === 0">
+                        <td colspan="5" class="px-4 py-8 text-center text-gray-400 text-sm">
+                            <i class="ti ti-building-community text-3xl block mb-2"></i>
+                            No hay ministerios registrados
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
@@ -251,6 +258,10 @@ const pageMethods = {
     },
     async onMounted() {
         await this.fetchMinistries()
+    },
+    clearFilters() {
+        this.isActiveFilter = ''
+        this.fetchMinistries()
     }
 }
 </script>

@@ -2,15 +2,15 @@
 
 echo "Esperando a PostgreSQL..."
 
-# Espera a que el puerto esté abierto
+# Espera a que el puerto este abierto
 until nc -z db 5432; do
-  echo "Postgres no está listo..."
+  echo "Postgres no esta listo..."
   sleep 2
 done
 
 echo "PostgreSQL accesible"
 
-# Espera conexión real
+# Espera conexion real
 until python -c "
 import psycopg2, os
 psycopg2.connect(
@@ -21,11 +21,11 @@ psycopg2.connect(
     port=5432
 )
 "; do
-  echo "Esperando conexión real..."
+  echo "Esperando conexion real..."
   sleep 2
 done
 
-echo "Base de datos lista 🚀"
+echo "Base de datos lista"
 
 python manage.py migrate
 python manage.py collectstatic --noinput

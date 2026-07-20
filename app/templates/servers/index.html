@@ -8,9 +8,9 @@
 {% block content %}
 
 <div>
-    <div class="flex justify-between items-center mb-6">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
-            <h1 class="text-2xl font-bold text-gray-800">Servidores</h1>
+            <h1 class="text-xl sm:text-2xl font-bold text-gray-800">Servidores</h1>
             <p class="text-gray-500">Gestión de servidores de la iglesia</p>
         </div>
         <div class="flex gap-2">
@@ -27,7 +27,7 @@
 
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-6">
         <h3 class="font-semibold text-gray-800 mb-4">[[ form.id ? 'Editar servidor' : 'Crear servidor' ]]</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
                 <label class="block text-xs font-medium text-gray-500 mb-1">Nombre</label>
                 <input type="text" v-model="form.firstName" placeholder="Nombre"
@@ -66,7 +66,8 @@
         </div>
         <div class="flex gap-2 mt-4">
             <button @click="saveServer"
-                    class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition flex items-center gap-1">
+                    class="px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1"
+                    :class="form.id ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-emerald-600 text-white hover:bg-emerald-700'">
                 <i :class="form.id ? 'ti ti-device-floppy' : 'ti ti-plus'"></i>
                 [[ form.id ? 'Actualizar' : 'Crear' ]]
             </button>
@@ -78,99 +79,105 @@
     </div>
 
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-6">
-        <div class="flex flex-wrap gap-4 items-end">
-            <div>
+        <div class="flex flex-col sm:flex-row flex-wrap gap-4 items-end">
+            <div class="w-full sm:w-auto">
                 <label class="block text-xs font-medium text-gray-500 mb-1">Filtrar por ministerio</label>
                 <select v-model="ministryFilter" @change="fetchServers"
-                        class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        class="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                     <option value="" disabled selected>Seleccione...</option>
                     <option v-for="ministry in ministries" :key="ministry.id" :value="ministry.id">
                         [[ ministry.name ]]
                     </option>
                 </select>
             </div>
-            <div>
+            <div class="w-full sm:w-auto">
                 <label class="block text-xs font-medium text-gray-500 mb-1">Filtrar por estado</label>
                 <select v-model="isActiveFilter" @change="fetchServers"
-                        class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        class="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                     <option value="" disabled selected>Seleccione...</option>
                     <option value="true">Activos</option>
                     <option value="false">Inactivos</option>
                 </select>
             </div>
+            <button v-if="ministryFilter || isActiveFilter" @click="clearFilters"
+                    class="w-full sm:w-auto px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition flex items-center gap-1">
+                <i class="ti ti-filter-off"></i> Limpiar filtros
+            </button>
         </div>
     </div>
 
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <table class="w-full">
-            <thead class="bg-gray-50">
-                <tr>
-                    <th @click="setSort('firstName')" class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none hover:text-gray-700">
-                        Nombre
-                        <i v-if="sortKey === 'firstName'" :class="sortDir === 'asc' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'" class="inline-block ml-1"></i>
-                    </th>
-                    <th @click="setSort('document')" class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none hover:text-gray-700">
-                        Documento
-                        <i v-if="sortKey === 'document'" :class="sortDir === 'asc' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'" class="inline-block ml-1"></i>
-                    </th>
-                    <th @click="setSort('isActive')" class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none hover:text-gray-700">
-                        Estado
-                        <i v-if="sortKey === 'isActive'" :class="sortDir === 'asc' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'" class="inline-block ml-1"></i>
-                    </th>
-                    <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Ministerios</th>
-                    <th class="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Acciones</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-                <tr v-for="server in sorted(servers)" :key="server.id" class="hover:bg-gray-50">
-                    <td class="px-4 py-3 text-sm font-medium text-gray-800">[[ server.firstName ]] [[ server.lastName ]]</td>
-                    <td class="px-4 py-3 text-sm text-gray-600">[[ server.document ]]</td>
-                    <td class="px-4 py-3">
-                        <span class="px-2 py-0.5 rounded-full text-xs font-medium"
-                              :class="server.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'">
-                            [[ server.isActive ? 'Activo' : 'Inactivo' ]]
-                        </span>
-                    </td>
-                    <td class="px-4 py-3">
-                        <div class="flex flex-wrap gap-1">
-                            <span v-for="ministry in server.ministries" :key="ministry.id"
-                                  class="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full text-xs font-medium">
-                                [[ ministry.name ]]
+        <div class="overflow-x-auto">
+            <table class="w-full min-w-[550px]">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th @click="setSort('firstName')" class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none hover:text-gray-700">
+                            Nombre
+                            <i v-if="sortKey === 'firstName'" :class="sortDir === 'asc' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'" class="inline-block ml-1"></i>
+                        </th>
+                        <th @click="setSort('document')" class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none hover:text-gray-700">
+                            Documento
+                            <i v-if="sortKey === 'document'" :class="sortDir === 'asc' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'" class="inline-block ml-1"></i>
+                        </th>
+                        <th @click="setSort('isActive')" class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none hover:text-gray-700">
+                            Estado
+                            <i v-if="sortKey === 'isActive'" :class="sortDir === 'asc' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'" class="inline-block ml-1"></i>
+                        </th>
+                        <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Ministerios</th>
+                        <th class="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    <tr v-for="server in sorted(servers)" :key="server.id" class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-sm font-medium text-gray-800">[[ server.firstName ]] [[ server.lastName ]]</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">[[ server.document ]]</td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-0.5 rounded-full text-xs font-medium"
+                                  :class="server.isActive ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'">
+                                [[ server.isActive ? 'Activo' : 'Inactivo' ]]
                             </span>
-                            <span v-if="!server.ministries || server.ministries.length === 0" class="text-xs text-gray-400">
-                                Sin ministerios
-                            </span>
-                        </div>
-                    </td>
-                    <td class="px-4 py-3 text-center">
-                        <div class="flex items-center justify-center gap-1">
-                            <a :href="'/servers/' + server.id + '/detail/'"
-                               class="p-1.5 text-gray-500 hover:bg-gray-100 rounded-lg transition" title="Ver detalle">
-                                <i class="ti ti-eye"></i>
-                            </a>
-                            <button @click="editServer(server)"
-                                    class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Editar">
-                                <i class="ti ti-edit"></i>
-                            </button>
-                            <button v-if="server.isActive" @click="deactivateServer(server)"
-                                    class="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition" title="Desactivar">
-                                <i class="ti ti-user-off"></i>
-                            </button>
-                            <button v-else @click="activateServer(server)"
-                                    class="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition" title="Activar">
-                                <i class="ti ti-user-check"></i>
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-                <tr v-if="servers.length === 0">
-                    <td colspan="5" class="px-4 py-8 text-center text-gray-400 text-sm">
-                        <i class="ti ti-users-group text-3xl block mb-2"></i>
-                        No hay servidores registrados
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+                        </td>
+                        <td class="px-4 py-3">
+                            <div class="flex flex-wrap gap-1">
+                                <span v-for="ministry in server.ministries" :key="ministry.id"
+                                      class="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full text-xs font-medium">
+                                    [[ ministry.name ]]
+                                </span>
+                                <span v-if="!server.ministries || server.ministries.length === 0" class="text-xs text-gray-400">
+                                    Sin ministerios
+                                </span>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            <div class="flex items-center justify-center gap-1">
+                                <a :href="'/servers/' + server.id + '/detail/'"
+                                   class="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition" title="Ver detalle">
+                                    <i class="ti ti-eye"></i>
+                                </a>
+                                <button @click="editServer(server)"
+                                        class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Editar">
+                                    <i class="ti ti-edit"></i>
+                                </button>
+                                <button v-if="server.isActive" @click="deactivateServer(server)"
+                                        class="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition" title="Desactivar">
+                                    <i class="ti ti-user-off"></i>
+                                </button>
+                                <button v-else @click="activateServer(server)"
+                                        class="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition" title="Activar">
+                                    <i class="ti ti-user-check"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr v-if="servers.length === 0">
+                        <td colspan="5" class="px-4 py-8 text-center text-gray-400 text-sm">
+                            <i class="ti ti-users-group text-3xl block mb-2"></i>
+                            No hay servidores registrados
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
@@ -309,6 +316,11 @@ const pageMethods = {
     },
     async onMounted() {
         setTimeout(() => this.initializeSelect2(), 0)
+    },
+    clearFilters() {
+        this.ministryFilter = ''
+        this.isActiveFilter = ''
+        this.fetchServers()
     }
 }
 </script>

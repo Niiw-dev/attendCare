@@ -9,6 +9,33 @@
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3"></script>
+    <script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                colors: {
+                    gray: {
+                        50: '#E4E4DE', 100: '#D8D9CF', 200: '#C4C5BA', 300: '#B0B1A6',
+                        400: '#8A8E7A', 500: '#595F39', 600: '#1B1B1B', 700: '#1B1B1B',
+                        800: '#1B1B1B', 900: '#0D0D0D',
+                    },
+                    indigo: {
+                        100: '#E4E4DE', 200: '#C4C5BA', 300: '#B0B1A6', 400: '#595F39',
+                        500: '#595F39', 600: '#1B1B1B', 700: '#1B1B1B', 800: '#0D0D0D',
+                    },
+                },
+            },
+        },
+    }
+    </script>
+    <style>
+        * { scrollbar-width: thin; scrollbar-color: #C4C5BA transparent; }
+        *::-webkit-scrollbar { width: 6px; height: 6px; }
+        *::-webkit-scrollbar-track { background: transparent; }
+        *::-webkit-scrollbar-thumb { background: #C4C5BA; border-radius: 3px; }
+        *::-webkit-scrollbar-thumb:hover { background: #8A8E7A; }
+        *::-webkit-scrollbar-corner { background: transparent; }
+    </style>
 </head>
 
 <body class="min-h-screen bg-gradient-to-br from-indigo-100 via-white to-red-100">

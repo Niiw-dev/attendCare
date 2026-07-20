@@ -1,5 +1,3 @@
-version: '3.9'
-
 services:
 
   db:
@@ -29,6 +27,7 @@ services:
       args:
         ENV: dev
     container_name: church_backend
+    restart: always
     volumes:
       - .:/app
     expose:

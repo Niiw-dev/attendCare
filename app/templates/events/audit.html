@@ -3,20 +3,20 @@
 
 {% block content %}
 <div>
-    <div class="flex justify-between items-center mb-6">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
-            <h1 class="text-2xl font-bold text-gray-800">Log de Auditoría</h1>
+            <h1 class="text-xl sm:text-2xl font-bold text-gray-800">Log de Auditoría</h1>
             <p class="text-gray-500">Registro inmutable de operaciones del sistema</p>
         </div>
         <button @click="fetchLogs"
-                class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition flex items-center gap-1">
+                class="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition flex items-center gap-1 justify-center">
             <i class="ti ti-refresh"></i> Actualizar
         </button>
     </div>
 
     <p v-if="error" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">[[ error ]]</p>
 
-    <div class="mb-4 flex gap-2">
+    <div class="mb-4 flex flex-wrap gap-2">
         <button @click="actionFilter = ''; fetchLogs()"
                 class="px-3 py-1.5 rounded-lg text-xs font-medium transition"
                 :class="actionFilter === '' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'">
@@ -45,7 +45,7 @@
                 </div>
 
                 <div class="flex-1 min-w-0">
-                    <div class="flex justify-between">
+                    <div class="flex flex-col sm:flex-row sm:justify-between gap-1">
                         <p class="text-sm font-medium text-gray-800">
                             [[ log.action ]]
                         </p>
@@ -57,7 +57,7 @@
                     <p class="text-xs text-gray-500">
                         Realizado por: [[ log.performedBy || 'Sistema' ]]
                     </p>
-                    <div class="mt-2 flex gap-4 text-xs font-mono text-gray-400">
+                    <div class="mt-2 flex flex-wrap gap-4 text-xs font-mono text-gray-400">
                         <span class="truncate max-w-[200px]" title="[[ log.previousHash ]]">
                             Prev: [[ log.previousHash ? log.previousHash.substring(0, 16) + '...' : '0x0000' ]]
                         </span>

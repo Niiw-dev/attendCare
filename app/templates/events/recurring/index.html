@@ -9,7 +9,7 @@
 <div>
     <div class="flex justify-between items-center mb-6">
         <div>
-            <h1 class="text-2xl font-bold text-gray-800">Eventos Recurrentes</h1>
+            <h1 class="text-xl sm:text-2xl font-bold text-gray-800">Eventos Recurrentes</h1>
             <p class="text-gray-500">Configura eventos que se repiten semanalmente</p>
         </div>
     </div>
@@ -18,7 +18,7 @@
 
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-6">
         <h3 class="font-semibold text-gray-800 mb-4">[[ form.id ? 'Editar evento recurrente' : 'Nuevo evento recurrente' ]]</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
                 <label class="block text-xs font-medium text-gray-500 mb-1">Nombre</label>
                 <input v-model="form.name" placeholder="Nombre del evento"
@@ -61,7 +61,8 @@
         </div>
         <div class="flex gap-2 mt-4">
             <button @click="saveRecurring"
-                    class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition flex items-center gap-1">
+                    class="px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1"
+                    :class="form.id ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-emerald-600 text-white hover:bg-emerald-700'">
                 <i :class="form.id ? 'ti ti-device-floppy' : 'ti ti-plus'"></i>
                 [[ form.id ? 'Actualizar' : 'Guardar' ]]
             </button>
@@ -73,69 +74,71 @@
     </div>
 
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <table class="w-full">
-            <thead class="bg-gray-50">
-                <tr>
-                    <th @click="setSort('name')" class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none hover:text-gray-700">
-                        Nombre
-                        <i v-if="sortKey === 'name'" :class="sortDir === 'asc' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'" class="inline-block ml-1"></i>
-                    </th>
-                    <th @click="setSort('weekday')" class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none hover:text-gray-700">
-                        Día
-                        <i v-if="sortKey === 'weekday'" :class="sortDir === 'asc' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'" class="inline-block ml-1"></i>
-                    </th>
-                    <th @click="setSort('startTime')" class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none hover:text-gray-700">
-                        Inicio
-                        <i v-if="sortKey === 'startTime'" :class="sortDir === 'asc' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'" class="inline-block ml-1"></i>
-                    </th>
-                    <th @click="setSort('endTime')" class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none hover:text-gray-700">
-                        Fin
-                        <i v-if="sortKey === 'endTime'" :class="sortDir === 'asc' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'" class="inline-block ml-1"></i>
-                    </th>
-                    <th @click="setSort('isActive')" class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none hover:text-gray-700">
-                        Estado
-                        <i v-if="sortKey === 'isActive'" :class="sortDir === 'asc' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'" class="inline-block ml-1"></i>
-                    </th>
-                    <th class="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Acciones</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-                <tr v-for="event in sorted(recurringEvents)" :key="event.id" class="hover:bg-gray-50">
-                    <td class="px-4 py-3 text-sm font-medium text-gray-800">[[ event.name ]]</td>
-                    <td class="px-4 py-3 text-sm text-gray-600">[[ weekdayName(event.weekday) ]]</td>
-                    <td class="px-4 py-3 text-sm text-gray-600">[[ event.startTime ]]</td>
-                    <td class="px-4 py-3 text-sm text-gray-600">[[ event.endTime ]]</td>
-                    <td class="px-4 py-3">
-                        <span class="px-2 py-0.5 rounded-full text-xs font-medium"
-                              :class="event.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'">
-                            [[ event.isActive ? 'Activo' : 'Inactivo' ]]
-                        </span>
-                    </td>
-                    <td class="px-4 py-3 text-center">
-                        <div class="flex items-center justify-center gap-1">
-                            <button @click="editRecurring(event)"
-                                    class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Editar">
-                                <i class="ti ti-edit"></i>
-                            </button>
-                            <button v-if="event.isActive" @click="deactivateEvent(event)"
-                                    class="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition" title="Desactivar">
-                                <i class="ti ti-x"></i>
-                            </button>
-                            <button v-else @click="activateEvent(event)"
-                                    class="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition" title="Activar">
-                                <i class="ti ti-check"></i>
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-                <tr v-if="recurringEvents.length === 0">
-                    <td colspan="6" class="px-4 py-8 text-center text-gray-400 text-sm">
-                        <i class="ti ti-repeat text-3xl block mb-2"></i>
-                        No hay eventos recurrentes configurados
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+        <div class="overflow-x-auto">
+            <table class="w-full min-w-[550px]">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th @click="setSort('name')" class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none hover:text-gray-700">
+                            Nombre
+                            <i v-if="sortKey === 'name'" :class="sortDir === 'asc' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'" class="inline-block ml-1"></i>
+                        </th>
+                        <th @click="setSort('weekday')" class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none hover:text-gray-700">
+                            Día
+                            <i v-if="sortKey === 'weekday'" :class="sortDir === 'asc' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'" class="inline-block ml-1"></i>
+                        </th>
+                        <th @click="setSort('startTime')" class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none hover:text-gray-700">
+                            Inicio
+                            <i v-if="sortKey === 'startTime'" :class="sortDir === 'asc' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'" class="inline-block ml-1"></i>
+                        </th>
+                        <th @click="setSort('endTime')" class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none hover:text-gray-700">
+                            Fin
+                            <i v-if="sortKey === 'endTime'" :class="sortDir === 'asc' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'" class="inline-block ml-1"></i>
+                        </th>
+                        <th @click="setSort('isActive')" class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none hover:text-gray-700">
+                            Estado
+                            <i v-if="sortKey === 'isActive'" :class="sortDir === 'asc' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'" class="inline-block ml-1"></i>
+                        </th>
+                        <th class="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    <tr v-for="event in sorted(recurringEvents)" :key="event.id" class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-sm font-medium text-gray-800">[[ event.name ]]</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">[[ weekdayName(event.weekday) ]]</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">[[ event.startTime ]]</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">[[ event.endTime ]]</td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-0.5 rounded-full text-xs font-medium"
+                                  :class="event.isActive ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'">
+                                [[ event.isActive ? 'Activo' : 'Inactivo' ]]
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            <div class="flex items-center justify-center gap-1">
+                                <button @click="editRecurring(event)"
+                                        class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Editar">
+                                    <i class="ti ti-edit"></i>
+                                </button>
+                                <button v-if="event.isActive" @click="deactivateEvent(event)"
+                                        class="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition" title="Desactivar">
+                                    <i class="ti ti-x"></i>
+                                </button>
+                                <button v-else @click="activateEvent(event)"
+                                        class="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition" title="Activar">
+                                    <i class="ti ti-check"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr v-if="recurringEvents.length === 0">
+                        <td colspan="6" class="px-4 py-8 text-center text-gray-400 text-sm">
+                            <i class="ti ti-repeat text-3xl block mb-2"></i>
+                            No hay eventos recurrentes configurados
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -195,7 +198,7 @@ const pageMethods = {
             this.form = {
                 id: event.id,
                 name: event.name,
-                weekday: event.weekday ?? '', 
+                weekday: event.weekday ?? '',
                 startTime: event.startTime,
                 endTime: event.endTime,
                 eventType: event.eventType ?? '',

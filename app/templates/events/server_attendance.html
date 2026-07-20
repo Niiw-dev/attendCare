@@ -11,14 +11,14 @@
             <i class="ti ti-arrow-left"></i>
         </a>
         <div>
-            <h1 class="text-2xl font-bold text-gray-800">Historial de [[ server.firstName ]] [[ server.lastName ]]</h1>
+            <h1 class="text-xl sm:text-2xl font-bold text-gray-800">Historial de [[ server.firstName ]] [[ server.lastName ]]</h1>
             <p class="text-gray-500">Reporte de asistencia a eventos</p>
         </div>
     </div>
 
     <p v-if="error" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">[[ error ]]</p>
 
-    <div v-if="report" class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+    <div v-if="report" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 mb-6">
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-center">
             <p class="text-2xl font-bold text-blue-600">[[ report.totalEvents ]]</p>
             <p class="text-xs text-gray-500 mt-1">Eventos</p>
@@ -55,45 +55,47 @@
             <i class="ti ti-history text-4xl mb-3"></i>
             <p>No hay eventos reconciliados para este servidor</p>
         </div>
-        <table v-else class="w-full">
-            <thead class="bg-gray-50">
-                <tr>
-                    <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Evento</th>
-                    <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Fecha</th>
-                    <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Ingreso</th>
-                    <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Salida</th>
-                    <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Clasificación</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-                <tr v-for="h in report.history" :key="h.eventId" class="hover:bg-gray-50">
-                    <td class="px-4 py-3 text-sm font-medium text-gray-800">
-                        <a :href="'/events/' + h.eventId + '/detail/'" class="text-blue-600 hover:text-blue-800">[[ h.eventName ]]</a>
-                    </td>
-                    <td class="px-4 py-3 text-sm text-gray-600">[[ formatDate(h.eventDate) ]]</td>
-                    <td class="px-4 py-3 text-sm text-gray-400">
-                        <span v-if="h.checkIn">[[ formatTime(h.checkIn) ]]</span>
-                        <span v-else class="text-gray-300">—</span>
-                    </td>
-                    <td class="px-4 py-3 text-sm">
-                        <span v-if="h.checkOut" class="text-gray-400">[[ formatTime(h.checkOut) ]]</span>
-                        <span v-else class="text-amber-500 text-xs font-medium">Sin registrar</span>
-                    </td>
-                    <td class="px-4 py-3">
-                        <span class="px-2 py-0.5 rounded-full text-xs font-medium"
-                              :class="{
-                                  'bg-green-100 text-green-700': h.classification === 'ASSIGNED',
-                                  'bg-amber-100 text-amber-700': h.classification === 'INCOMPLETE',
-                                  'bg-yellow-100 text-yellow-700': h.classification === 'REPLACEMENT',
-                                  'bg-red-100 text-red-700': h.classification === 'ABSENT',
-                                  'bg-purple-100 text-purple-700': h.classification === 'VOLUNTEER'
-                              }">
-                            [[ classificationLabel(h.classification) ]]
-                        </span>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+        <div v-else class="overflow-x-auto">
+            <table class="w-full min-w-[500px]">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Evento</th>
+                        <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Fecha</th>
+                        <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Ingreso</th>
+                        <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Salida</th>
+                        <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Clasificación</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    <tr v-for="h in report.history" :key="h.eventId" class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-sm font-medium text-gray-800">
+                            <a :href="'/events/' + h.eventId + '/detail/'" class="text-blue-600 hover:text-blue-800">[[ h.eventName ]]</a>
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-600">[[ formatDate(h.eventDate) ]]</td>
+                        <td class="px-4 py-3 text-sm text-gray-400">
+                            <span v-if="h.checkIn">[[ formatTime(h.checkIn) ]]</span>
+                            <span v-else class="text-gray-300">—</span>
+                        </td>
+                        <td class="px-4 py-3 text-sm">
+                            <span v-if="h.checkOut" class="text-gray-400">[[ formatTime(h.checkOut) ]]</span>
+                            <span v-else class="text-amber-500 text-xs font-medium">Sin registrar</span>
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-0.5 rounded-full text-xs font-medium"
+                                   :class="{
+                                       'bg-green-200 text-green-800': h.classification === 'ASSIGNED',
+                                       'bg-amber-200 text-amber-800': h.classification === 'INCOMPLETE',
+                                       'bg-yellow-200 text-yellow-800': h.classification === 'REPLACEMENT',
+                                       'bg-red-200 text-red-800': h.classification === 'ABSENT',
+                                       'bg-purple-200 text-purple-800': h.classification === 'VOLUNTEER'
+                                   }">
+                                [[ classificationLabel(h.classification) ]]
+                            </span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 {% endblock %}

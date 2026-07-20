@@ -5,14 +5,14 @@
 <div>
     <div class="flex justify-between items-center mb-6">
         <div>
-            <h1 class="text-2xl font-bold text-gray-800">Dashboard</h1>
+            <h1 class="text-xl sm:text-2xl font-bold text-gray-800">Dashboard</h1>
             <p class="text-gray-500">[[ user.username ? 'Bienvenido, ' + user.username : 'Cargando...' ]]</p>
         </div>
     </div>
 
     <p v-if="error" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">[[ error ]]</p>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 card">
             <div class="flex items-center justify-between mb-4">
                 <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -48,8 +48,8 @@
                 </div>
                 <i class="ti ti-arrow-right text-gray-300"></i>
             </div>
-            <p class="text-3xl font-bold text-gray-800">[[ activeEvents ]]</p>
-            <p class="text-sm text-gray-500 mt-1">Eventos activos</p>
+            <p class="text-3xl font-bold text-gray-800">[[ programados.length ]]</p>
+            <p class="text-sm text-gray-500 mt-1">Eventos programados</p>
             <a href="/events/view/" class="text-sm text-blue-600 hover:text-blue-800 mt-3 inline-block font-medium">
                 Ver todos <i class="ti ti-arrow-right ml-1"></i>
             </a>
@@ -74,31 +74,82 @@
         <div class="px-4 py-3 border-b border-gray-100">
             <h3 class="font-semibold text-gray-800">Eventos de hoy</h3>
         </div>
-        <table class="w-full">
-            <thead class="bg-gray-50">
-                <tr>
-                    <th @click="setSort('name')" class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none hover:text-gray-700">
-                        Evento
-                        <i v-if="sortKey === 'name'" :class="sortDir === 'asc' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'" class="inline-block ml-1"></i>
-                    </th>
-                    <th @click="setSort('typeData.name')" class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none hover:text-gray-700">
-                        Tipo
-                        <i v-if="sortKey === 'typeData.name'" :class="sortDir === 'asc' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'" class="inline-block ml-1"></i>
-                    </th>
-                    <th @click="setSort('startDate')" class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none hover:text-gray-700">
-                        Inicio
-                        <i v-if="sortKey === 'startDate'" :class="sortDir === 'asc' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'" class="inline-block ml-1"></i>
-                    </th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-                <tr v-for="e in sorted(eventsToday)" :key="e.id" class="hover:bg-gray-50">
-                    <td class="px-4 py-3 text-sm font-medium text-gray-800">[[ e.name ]]</td>
-                    <td class="px-4 py-3 text-sm text-gray-600">[[ e.typeData.name ]]</td>
-                    <td class="px-4 py-3 text-sm text-gray-500">[[ formatDate(e.startDate) ]]</td>
-                </tr>
-            </tbody>
-        </table>
+        <div class="overflow-x-auto">
+            <table class="w-full min-w-[400px]">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th @click="setSort('name')" class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none hover:text-gray-700">
+                            Evento
+                            <i v-if="sortKey === 'name'" :class="sortDir === 'asc' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'" class="inline-block ml-1"></i>
+                        </th>
+                        <th @click="setSort('typeData.name')" class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none hover:text-gray-700">
+                            Tipo
+                            <i v-if="sortKey === 'typeData.name'" :class="sortDir === 'asc' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'" class="inline-block ml-1"></i>
+                        </th>
+                        <th @click="setSort('startDate')" class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none hover:text-gray-700">
+                            Inicio
+                            <i v-if="sortKey === 'startDate'" :class="sortDir === 'asc' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'" class="inline-block ml-1"></i>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    <tr v-for="e in sorted(eventsToday)" :key="e.id" class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-sm font-medium text-gray-800">[[ e.name ]]</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">[[ e.typeData.name ]]</td>
+                        <td class="px-4 py-3 text-sm text-gray-500">[[ formatDate(e.startDate) ]]</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-4 py-3 border-b border-gray-100 flex justify-between items-center">
+                <h3 class="font-semibold text-gray-800">Próximos eventos</h3>
+                <a href="/events/view/" class="text-xs text-blue-600 hover:text-blue-800 font-medium">Ver todos</a>
+            </div>
+            <div v-if="upcomingEvents.length === 0" class="text-center py-8 text-gray-400 text-sm">
+                <i class="ti ti-calendar-off text-3xl block mb-2"></i>
+                No hay eventos próximos
+            </div>
+            <div v-else class="divide-y divide-gray-50">
+                <div v-for="e in upcomingEvents" :key="e.id" class="px-4 py-3 hover:bg-gray-50 transition">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-sm font-medium text-gray-800">[[ e.name ]]</p>
+                            <p class="text-xs text-gray-500 mt-0.5">[[ e.typeData.name ]]</p>
+                        </div>
+                        <span class="text-xs text-gray-400 whitespace-nowrap ml-3">[[ formatDateShort(e.startDate) ]]</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-4 py-3 border-b border-gray-100 flex justify-between items-center">
+                <h3 class="font-semibold text-gray-800">Actividad reciente</h3>
+                <a href="/audit/" class="text-xs text-blue-600 hover:text-blue-800 font-medium">Ver todo</a>
+            </div>
+            <div v-if="recentLogs.length === 0" class="text-center py-8 text-gray-400 text-sm">
+                <i class="ti ti-shield-off text-3xl block mb-2"></i>
+                Sin actividad registrada
+            </div>
+            <div v-else class="divide-y divide-gray-50">
+                <div v-for="log in recentLogs" :key="log.id" class="px-4 py-3 hover:bg-gray-50 transition">
+                    <div class="flex items-start gap-3">
+                        <div class="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
+                             :class="log.action === 'ATTENDANCE_REGISTERED' ? 'bg-green-100 text-green-600' : log.action === 'RECONCILIATION_EXECUTED' ? 'bg-blue-100 text-blue-600' : 'bg-amber-100 text-amber-600'">
+                            <i :class="log.action === 'ATTENDANCE_REGISTERED' ? 'ti ti-fingerprint' : log.action === 'RECONCILIATION_EXECUTED' ? 'ti ti-checklist' : 'ti ti-swap'" class="text-sm"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm text-gray-800">[[ log.action ]]</p>
+                            <p class="text-xs text-gray-400">[[ log.performedBy || 'Sistema' ]] · [[ formatTimeAgo(log.timestamp) ]]</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -111,6 +162,7 @@ const pageData = {
     events: [],
     programados: [],
     activos: [],
+    recentLogs: [],
     programadoStatusId: null,
     activoStatusId: null,
     sortKey: '',
@@ -129,8 +181,13 @@ const pageComputed = {
     totalServers() {
         return this.servers.length
     },
-    activeEvents() {
-        return this.programados.length + this.activos.length
+    upcomingEvents() {
+        const now = new Date().toISOString()
+        const all = [...this.programados, ...this.activos]
+        return all
+            .filter(e => e.startDate && e.startDate > now)
+            .sort((a, b) => a.startDate.localeCompare(b.startDate))
+            .slice(0, 5)
     },
     eventsToday() {
         const all = [...this.programados, ...this.activos]
@@ -154,6 +211,23 @@ const pageMethods = {
             year: 'numeric', month: 'long', day: 'numeric',
             hour: '2-digit', minute: '2-digit'
         })
+    },
+    formatDateShort(date) {
+        if (!date) return ''
+        return new Date(date).toLocaleDateString('es-ES', {
+            weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
+        })
+    },
+    formatTimeAgo(date) {
+        if (!date) return ''
+        const diff = Date.now() - new Date(date).getTime()
+        const mins = Math.floor(diff / 60000)
+        if (mins < 1) return 'ahora'
+        if (mins < 60) return `hace ${mins}m`
+        const hrs = Math.floor(mins / 60)
+        if (hrs < 24) return `hace ${hrs}h`
+        const days = Math.floor(hrs / 24)
+        return `hace ${days}d`
     },
     setSort(key) {
         if (this.sortKey === key) {
@@ -212,6 +286,9 @@ const pageMethods = {
         this.programados = programados
         this.activos = activos
         this.events = [...programados, ...activos]
+
+        const logs = await this.apiRequest('/api/audit/')
+        if (logs) this.recentLogs = logs.slice(0, 5)
     }
 }
 </script>

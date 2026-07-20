@@ -12,7 +12,7 @@
             <i class="ti ti-arrow-left"></i>
         </a>
         <div>
-            <h1 class="text-2xl font-bold text-gray-800">[[ server.firstName ]] [[ server.lastName ]]</h1>
+            <h1 class="text-xl sm:text-2xl font-bold text-gray-800">[[ server.firstName ]] [[ server.lastName ]]</h1>
             <p class="text-gray-500">Detalle del servidor</p>
         </div>
     </div>
@@ -24,7 +24,7 @@
         <div class="lg:col-span-2">
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <h3 class="font-semibold text-gray-800 mb-4">Información general</h3>
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <p class="text-xs font-medium text-gray-500 uppercase">Nombre</p>
                         <p class="text-sm text-gray-800 mt-1">[[ server.firstName ]] [[ server.lastName ]]</p>
@@ -36,7 +36,7 @@
                     <div>
                         <p class="text-xs font-medium text-gray-500 uppercase">Estado</p>
                         <span class="inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium"
-                              :class="server.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'">
+                              :class="server.isActive ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'">
                             [[ server.isActive ? 'Activo' : 'Inactivo' ]]
                         </span>
                     </div>
@@ -56,7 +56,7 @@
                      class="flex items-center justify-between py-3 border-b border-gray-50 last:border-0">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 rounded-lg flex items-center justify-center"
-                             :class="sm.isActive ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-400'">
+                             :class="ministryIconClass(sm.id)">
                             <i class="ti ti-building-community text-lg"></i>
                         </div>
                         <div>
@@ -65,7 +65,7 @@
                         </div>
                     </div>
                     <span class="px-2 py-0.5 rounded-full text-xs font-medium"
-                          :class="sm.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'">
+                          :class="sm.isActive ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'">
                         [[ sm.isActive ? 'Activo' : 'Inactivo' ]]
                     </span>
                 </div>
@@ -119,6 +119,19 @@ const pageMethods = {
         return new Date(date).toLocaleDateString('es-ES', {
             year: 'numeric', month: 'long', day: 'numeric'
         })
+    },
+    ministryIconClass(id) {
+        const colors = [
+            'bg-blue-100 text-blue-600',
+            'bg-green-100 text-green-600',
+            'bg-purple-100 text-purple-600',
+            'bg-amber-100 text-amber-600',
+            'bg-rose-100 text-rose-600',
+            'bg-cyan-100 text-cyan-600',
+            'bg-indigo-100 text-indigo-600',
+            'bg-pink-100 text-pink-600',
+        ]
+        return colors[(id - 1) % colors.length]
     },
     async deactivateServer() {
         if (!confirm('¿Deseas desactivar este servidor?')) return
