@@ -31,23 +31,72 @@ class EventViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = Event.objects.select_related('type', 'status', 'leaderMinistry').prefetch_related('ministries')
-        status = self.request.query_params.get('status')
+        user = self.request.user
+        status_filter = self.request.query_params.get('status')
         typeId = self.request.query_params.get('typeId')
         startDate = self.request.query_params.get('startDate')
         endDate = self.request.query_params.get('endDate')
 
-        if status:
-            queryset = queryset.filter(status__id=status)
+        if status_filter:
+            queryset = queryset.filter(status__id=status_filter)
         if typeId:
             queryset = queryset.filter(type_id=typeId)
         if startDate:
             queryset = queryset.filter(startDate__date=startDate)
 
-        return queryset.order_by('-startDate')
+        queryset = queryset.order_by('-startDate')
+
+        if user.role == 'LIDER':
+            my_ministry = Ministry.objects.filter(leaderAssigned=user).first()
+            if my_ministry:
+                own_events = list(queryset.filter(leaderMinistry=my_ministry))
+                other_events = list(queryset.exclude(leaderMinistry=my_ministry))
+                return own_events + other_events
+            else:
+                return Event.objects.none()
+
+        return queryset
+
+    def perform_create(self, serializer):
+        serializer.save(createdBy=self.request.user)
+
+    def update(self, request, *args, **kwargs):
+        event = self.get_object()
+        user = request.user
+        if user.role == 'LIDER':
+            my_ministry = Ministry.objects.filter(leaderAssigned=user).first()
+            if my_ministry and event.leaderMinistry_id != my_ministry.id:
+                return Response({'error': 'No tienes permisos para modificar este evento'}, status=status.HTTP_403_FORBIDDEN)
+        return super().update(request, *args, **kwargs)
+
+    def partial_update(self, request, *args, **kwargs):
+        event = self.get_object()
+        user = request.user
+        if user.role == 'LIDER':
+            my_ministry = Ministry.objects.filter(leaderAssigned=user).first()
+            if my_ministry and event.leaderMinistry_id != my_ministry.id:
+                return Response({'error': 'No tienes permisos para modificar este evento'}, status=status.HTTP_403_FORBIDDEN)
+        return super().partial_update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        event = self.get_object()
+        user = request.user
+        if user.role == 'LIDER':
+            my_ministry = Ministry.objects.filter(leaderAssigned=user).first()
+            if my_ministry and event.leaderMinistry_id != my_ministry.id:
+                return Response({'error': 'No tienes permisos para eliminar este evento'}, status=status.HTTP_403_FORBIDDEN)
+        return super().destroy(request, *args, **kwargs)
 
     @action(detail=True, methods=['patch'])
     def finalize(self, request, pk=None):
         event = self.get_object()
+        user = request.user
+
+        if user.role == 'LIDER':
+            my_ministry = Ministry.objects.filter(leaderAssigned=user).first()
+            if my_ministry and event.leaderMinistry_id != my_ministry.id:
+                return Response({'error': 'No tienes permisos para finalizar este evento'}, status=status.HTTP_403_FORBIDDEN)
+
         if event.status.code == 'RECONCILIADO':
             return Response({'error': 'No se puede finalizar un evento ya reconciliado'}, status=status.HTTP_400_BAD_REQUEST)
         if event.status.code == 'FINALIZADO':
@@ -66,6 +115,13 @@ class EventViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['patch'])
     def deactivate(self, request, pk=None):
         event = self.get_object()
+        user = request.user
+
+        if user.role == 'LIDER':
+            my_ministry = Ministry.objects.filter(leaderAssigned=user).first()
+            if my_ministry and event.leaderMinistry_id != my_ministry.id:
+                return Response({'error': 'No tienes permisos para cancelar este evento'}, status=status.HTTP_403_FORBIDDEN)
+
         if event.status.code in ('FINALIZADO', 'RECONCILIADO', 'CANCELADO'):
             return Response({'error': 'El evento ya está finalizado, reconciliado o cancelado'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -86,7 +142,23 @@ class EventViewSet(viewsets.ModelViewSet):
                 return Response({'error': 'No se pueden modificar asignaciones en eventos finalizados, reconciliados o cancelados'},
                                 status=status.HTTP_400_BAD_REQUEST)
 
+            user = request.user
+            if user.role == 'LIDER':
+                my_ministry = Ministry.objects.filter(leaderAssigned=user).first()
+                if my_ministry and event.leaderMinistry_id != my_ministry.id:
+                    return Response({'error': 'No tienes permisos para modificar asignaciones de este evento'},
+                                    status=status.HTTP_403_FORBIDDEN)
+
             if request.method == 'POST':
+                if user.role == 'LIDER':
+                    my_ministry = Ministry.objects.filter(leaderAssigned=user).first()
+                    server_id = request.data.get('server')
+                    if server_id and my_ministry:
+                        server = Server.objects.filter(id=server_id).first()
+                        if server and not server.ministries.filter(id=my_ministry.id).exists():
+                            return Response({'error': 'Solo puedes asignar servidores de tu ministerio'},
+                                            status=status.HTTP_403_FORBIDDEN)
+
                 serializer = AssignmentSerializer(data={'event': event.id, **request.data}, context={'request': request})
                 serializer.is_valid(raise_exception=True)
                 serializer.save()
@@ -103,6 +175,12 @@ class EventViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get', 'post', 'patch'])
     def reconcile(self, request, pk=None):
         event = self.get_object()
+        user = request.user
+
+        if user.role == 'LIDER':
+            my_ministry = Ministry.objects.filter(leaderAssigned=user).first()
+            if my_ministry and event.leaderMinistry_id != my_ministry.id:
+                return Response({'error': 'No tienes permisos para reconciliar este evento'}, status=status.HTTP_403_FORBIDDEN)
 
         if event.status.code not in ('FINALIZADO', 'RECONCILIADO'):
             return Response({'error': 'Solo se puede reconciliar eventos finalizados o reconciliados'}, status=status.HTTP_400_BAD_REQUEST)
@@ -338,11 +416,25 @@ class ReconciliationViewSet(viewsets.ReadOnlyModelViewSet):
 class AuditLogViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = AuditLog.objects.all()
     serializer_class = AuditLogSerializer
-    permission_classes = [IsAuthenticated, IsPastor]
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         qs = AuditLog.objects.all()
+        user = self.request.user
         action = self.request.query_params.get('action')
+
+        if user.role == 'LIDER':
+            from ministries.models import Ministry
+            my_ministry = Ministry.objects.filter(leaderAssigned=user).first()
+            if my_ministry:
+                server_ids = list(my_ministry.servers.values_list('id', flat=True))
+                qs = qs.filter(
+                    Q(details__serverId__in=server_ids) |
+                    Q(performedBy__startswith='server:') & Q(details__serverId__in=server_ids)
+                ).distinct()
+            else:
+                qs = AuditLog.objects.none()
+
         if action:
             qs = qs.filter(action=action)
         return qs[:100]
@@ -727,12 +819,20 @@ def report_ministry_indicators(request, ministry_id):
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated, IsPastor])
+@permission_classes([IsAuthenticated])
 def report_general(request):
     start_date = request.query_params.get('startDate')
     end_date = request.query_params.get('endDate')
+    user = request.user
 
-    ministries = Ministry.objects.filter(isActive=True)
+    if user.role == 'LIDER':
+        my_ministry = Ministry.objects.filter(leaderAssigned=user).first()
+        if not my_ministry:
+            return Response({'ministries': [], 'totalMinistries': 0})
+        ministries = Ministry.objects.filter(id=my_ministry.id, isActive=True)
+    else:
+        ministries = Ministry.objects.filter(isActive=True)
+
     result = []
 
     for ministry in ministries:

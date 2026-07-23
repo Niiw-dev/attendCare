@@ -11,6 +11,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="/static/js/table-utils.js"></script>
 
     <script>
     tailwind.config = {
@@ -89,7 +90,7 @@
                     <span>Usuarios</span>
                 </a>
 
-                <a href="/ministries/"
+                <a v-if="user.role === 'PASTOR'" href="/ministries/"
                    class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/90 hover:text-white"
                    :class="{'active text-white bg-white/10': activeMenu === 'ministries'}">
                     <i class="ti ti-building-community text-lg"></i>
@@ -110,23 +111,25 @@
                     <span>Eventos</span>
                 </a>
 
-                <div class="pt-3 pb-1">
-                    <p class="px-3 text-xs font-semibold text-white/40 uppercase tracking-wider">Configuración</p>
-                </div>
+                <template v-if="user.role === 'PASTOR'">
+                    <div class="pt-3 pb-1">
+                        <p class="px-3 text-xs font-semibold text-white/40 uppercase tracking-wider">Configuración</p>
+                    </div>
 
-                <a href="/events/types/view/"
-                   class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/90 hover:text-white"
-                   :class="{'active text-white bg-white/10': activeMenu === 'types'}">
-                    <i class="ti ti-category text-lg"></i>
-                    <span>Tipos de evento</span>
-                </a>
+                    <a href="/events/types/view/"
+                       class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/90 hover:text-white"
+                       :class="{'active text-white bg-white/10': activeMenu === 'types'}">
+                        <i class="ti ti-category text-lg"></i>
+                        <span>Tipos de evento</span>
+                    </a>
 
-                <a href="/events/recurring/view/"
-                   class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/90 hover:text-white"
-                   :class="{'active text-white bg-white/10': activeMenu === 'recurring'}">
-                    <i class="ti ti-repeat text-lg"></i>
-                    <span>Eventos recurrentes</span>
-                </a>
+                    <a href="/events/recurring/view/"
+                       class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/90 hover:text-white"
+                       :class="{'active text-white bg-white/10': activeMenu === 'recurring'}">
+                        <i class="ti ti-repeat text-lg"></i>
+                        <span>Eventos recurrentes</span>
+                    </a>
+                </template>
 
                 <div class="pt-3 pb-1">
                     <p class="px-3 text-xs font-semibold text-white/40 uppercase tracking-wider">Reportes</p>
@@ -210,6 +213,7 @@ const baseData = {
     success: '',
     sidebarOpen: false,
     activeMenu: '{{ active_menu|default:"" }}',
+    ...tableDefaultData,
     ...(typeof pageData !== 'undefined' ? pageData : {})
 }
 
@@ -303,14 +307,16 @@ const baseMethods = {
         return data
     },
 
+    ...tableMethods,
     ...(typeof pageMethods !== 'undefined' ? pageMethods : {})
 }
 
 const baseComputed = {
+    ...tableComputed,
     ...(typeof pageComputed !== 'undefined' ? pageComputed : {})
 }
 
-createApp({
+const app = createApp({
     delimiters: ['[[', ']]'],
     data() {
         return {
@@ -341,7 +347,11 @@ createApp({
         this.trackActivity()
         if (typeof this.onMounted === 'function') this.onMounted()
     },
-}).mount('#app')
+})
+
+app.component('v-pagination', PaginationComponent)
+
+app.mount('#app')
 </script>
 
 </body>

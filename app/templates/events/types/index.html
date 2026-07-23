@@ -37,6 +37,15 @@
     </div>
 
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="px-4 py-3 border-b border-gray-100">
+            <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <i class="ti ti-search text-gray-400"></i>
+                </div>
+                <input type="text" v-model="searchQuery" placeholder="Buscar tipos..."
+                       class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+            </div>
+        </div>
         <div class="overflow-x-auto">
             <table class="w-full min-w-[350px]">
                 <thead class="bg-gray-50">
@@ -48,7 +57,7 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
-                    <tr v-for="type in sorted(types)" :key="type.id" class="hover:bg-gray-50">
+                    <tr v-for="type in paginatedItems" :key="type.id" class="hover:bg-gray-50">
                         <td class="px-4 py-3 text-sm text-gray-600">[[ type.id ]]</td>
                         <td class="px-4 py-3 text-sm font-medium text-gray-800">[[ type.name ]]</td>
                         <td class="px-4 py-3">
@@ -83,6 +92,35 @@
                 </tbody>
             </table>
         </div>
+        <div v-if="totalPages > 1" class="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-3 border-t border-gray-100">
+            <div class="flex items-center gap-2 text-sm text-gray-500">
+                <span>Mostrar</span>
+                <select :value="perPage" @change="perPage = Number($event.target.value); currentPage = 1"
+                    class="border border-gray-300 rounded-lg text-sm px-2 py-1 focus:ring-2 focus:ring-blue-500 outline-none">
+                    <option :value="5">5</option>
+                    <option :value="10">10</option>
+                    <option :value="25">25</option>
+                    <option :value="50">50</option>
+                </select>
+                <span>de [[ totalItems ]] registros</span>
+            </div>
+            <div class="flex items-center gap-1">
+                <button @click="prevPage()" :disabled="currentPage <= 1"
+                    class="px-3 py-1.5 text-sm rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition">
+                    <i class="ti ti-chevron-left"></i>
+                </button>
+                <button v-for="page in pageNumbers" :key="page"
+                    @click="goToPage(page)"
+                    class="w-9 h-9 text-sm rounded-lg transition"
+                    :class="page === currentPage ? 'bg-blue-600 text-white' : 'border border-gray-300 hover:bg-gray-50'">
+                    [[ page ]]
+                </button>
+                <button @click="nextPage()" :disabled="currentPage >= totalPages"
+                    class="px-3 py-1.5 text-sm rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition">
+                    <i class="ti ti-chevron-right"></i>
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -92,8 +130,6 @@
 const pageData = {
     types: JSON.parse(document.getElementById('eventTypes').textContent),
     form: { id: null, name: '' },
-    sortKey: '',
-    sortDir: 'asc',
     error: ''
 }
 </script>
@@ -128,37 +164,23 @@ const pageMethods = {
     },
     async fetchTypes() {
         const data = await this.apiRequest('/api/types/')
-        if (data) this.types = data
+        if (data) {
+            this.types = data
+            this.currentPage = 1
+        }
     },
     resetForm() {
         this.form = { id: null, name: '' }
     },
-    setSort(key) {
-        if (this.sortKey === key) {
-            this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc'
-        } else {
-            this.sortKey = key
-            this.sortDir = 'asc'
-        }
-    },
-    sorted(arr) {
-        if (!this.sortKey || !arr) return arr
-        const sorted = [...arr]
-        sorted.sort((a, b) => {
-            let valA = this.getNestedValue(a, this.sortKey)
-            let valB = this.getNestedValue(b, this.sortKey)
-            if (valA == null) valA = ''
-            if (valB == null) valB = ''
-            if (typeof valA === 'string') valA = valA.toLowerCase()
-            if (typeof valB === 'string') valB = valB.toLowerCase()
-            if (valA < valB) return this.sortDir === 'asc' ? -1 : 1
-            if (valA > valB) return this.sortDir === 'asc' ? 1 : -1
-            return 0
-        })
-        return sorted
-    },
-    getNestedValue(obj, path) {
-        return path.split('.').reduce((o, p) => o ? o[p] : '', obj)
+}
+</script>
+{% endblock %}
+
+{% block vueComputed %}
+<script>
+const pageComputed = {
+    tableItems() {
+        return this.filterBySearch(this.sorted(this.types))
     },
 }
 </script>

@@ -48,10 +48,16 @@
     </div>
 
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div class="p-4 border-b border-gray-100">
-            <h3 class="font-semibold text-gray-800">Historial</h3>
+        <div class="px-4 py-3 border-b border-gray-100">
+            <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <i class="ti ti-search text-gray-400"></i>
+                </div>
+                <input type="text" v-model="searchQuery" placeholder="Buscar en historial..."
+                       class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+            </div>
         </div>
-        <div v-if="!report || report.history.length === 0" class="text-center py-12 text-gray-400">
+        <div v-if="!report || historyItems.length === 0" class="text-center py-12 text-gray-400">
             <i class="ti ti-history text-4xl mb-3"></i>
             <p>No hay eventos reconciliados para este servidor</p>
         </div>
@@ -67,7 +73,7 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
-                    <tr v-for="h in report.history" :key="h.eventId" class="hover:bg-gray-50">
+                    <tr v-for="h in paginatedItems" :key="h.eventId" class="hover:bg-gray-50">
                         <td class="px-4 py-3 text-sm font-medium text-gray-800">
                             <a :href="'/events/' + h.eventId + '/detail/'" class="text-blue-600 hover:text-blue-800">[[ h.eventName ]]</a>
                         </td>
@@ -96,6 +102,35 @@
                 </tbody>
             </table>
         </div>
+        <div v-if="totalPages > 1" class="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-3 border-t border-gray-100">
+            <div class="flex items-center gap-2 text-sm text-gray-500">
+                <span>Mostrar</span>
+                <select :value="perPage" @change="perPage = Number($event.target.value); currentPage = 1"
+                    class="border border-gray-300 rounded-lg text-sm px-2 py-1 focus:ring-2 focus:ring-blue-500 outline-none">
+                    <option :value="5">5</option>
+                    <option :value="10">10</option>
+                    <option :value="25">25</option>
+                    <option :value="50">50</option>
+                </select>
+                <span>de [[ totalItems ]] registros</span>
+            </div>
+            <div class="flex items-center gap-1">
+                <button @click="prevPage()" :disabled="currentPage <= 1"
+                    class="px-3 py-1.5 text-sm rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition">
+                    <i class="ti ti-chevron-left"></i>
+                </button>
+                <button v-for="page in pageNumbers" :key="page"
+                    @click="goToPage(page)"
+                    class="w-9 h-9 text-sm rounded-lg transition"
+                    :class="page === currentPage ? 'bg-blue-600 text-white' : 'border border-gray-300 hover:bg-gray-50'">
+                    [[ page ]]
+                </button>
+                <button @click="nextPage()" :disabled="currentPage >= totalPages"
+                    class="px-3 py-1.5 text-sm rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition">
+                    <i class="ti ti-chevron-right"></i>
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -113,6 +148,7 @@ const classificationLabels = {
 const pageData = {
     server: JSON.parse(document.getElementById('server-data').textContent),
     report: null,
+    historyItems: [],
     error: ''
 }
 </script>
@@ -136,11 +172,24 @@ const pageMethods = {
     },
     async fetchReport() {
         const data = await this.apiRequest(`/api/reports/server/${this.server.id}/attendance/`)
-        if (data) this.report = data
+        if (data) {
+            this.report = data
+            this.historyItems = data.history || []
+        }
     },
     async onMounted() {
         await this.fetchReport()
     }
+}
+</script>
+{% endblock %}
+
+{% block vueComputed %}
+<script>
+const pageComputed = {
+    tableItems() {
+        return this.filterBySearch(this.historyItems)
+    },
 }
 </script>
 {% endblock %}

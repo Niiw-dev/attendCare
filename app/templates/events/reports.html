@@ -41,12 +41,12 @@
 
     <!-- Ministerio selector -->
     <div class="flex flex-wrap gap-2 mb-6">
-        <button @click="selectedMinistry = null; loadGeneralReport()"
+        <button v-if="user.role === 'PASTOR'" @click="selectedMinistry = null; loadGeneralReport()"
                 class="px-4 py-2 rounded-lg text-sm font-medium transition"
                 :class="selectedMinistry === null ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'">
             General
         </button>
-        <button v-for="m in ministries" :key="m.id"
+        <button v-for="m in (user.role === 'LIDER' && user.myMinistry ? [user.myMinistry] : ministries)" :key="m.id"
                 @click="selectMinistry(m)"
                 class="px-4 py-2 rounded-lg text-sm font-medium transition"
                 :class="selectedMinistry?.id === m.id ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'">
@@ -225,8 +225,6 @@ const pageData = {
     endDate: '',
     generalReport: null,
     ministryReport: null,
-    sortKey: '',
-    sortDir: 'asc',
 }
 </script>
 {% endblock %}
@@ -265,41 +263,22 @@ const pageMethods = {
         const data = await this.apiRequest(url)
         if (data) this.ministryReport = data
     },
-    setSort(key) {
-        if (this.sortKey === key) {
-            this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc'
-        } else {
-            this.sortKey = key
-            this.sortDir = 'asc'
-        }
-    },
-    sorted(arr) {
-        if (!this.sortKey || !arr) return arr
-        const sorted = [...arr]
-        sorted.sort((a, b) => {
-            let valA = this.getNestedValue(a, this.sortKey)
-            let valB = this.getNestedValue(b, this.sortKey)
-            if (valA == null) valA = ''
-            if (valB == null) valB = ''
-            if (typeof valA === 'string') valA = valA.toLowerCase()
-            if (typeof valB === 'string') valB = valB.toLowerCase()
-            if (valA < valB) return this.sortDir === 'asc' ? -1 : 1
-            if (valA > valB) return this.sortDir === 'asc' ? 1 : -1
-            return 0
-        })
-        return sorted
-    },
-    getNestedValue(obj, path) {
-        return path.split('.').reduce((o, p) => o ? o[p] : '', obj)
-    },
     clearFilters() {
         this.startDate = ''
         this.endDate = ''
-        this.selectedMinistry = null
-        this.loadGeneralReport()
+        if (this.user.role === 'LIDER' && this.user.myMinistry) {
+            this.selectMinistry(this.user.myMinistry)
+        } else {
+            this.selectedMinistry = null
+            this.loadGeneralReport()
+        }
     },
     async onMounted() {
-        await this.loadGeneralReport()
+        if (this.user.role === 'LIDER' && this.user.myMinistry) {
+            this.selectMinistry(this.user.myMinistry)
+        } else {
+            await this.loadGeneralReport()
+        }
     }
 }
 </script>

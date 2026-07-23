@@ -1,6 +1,6 @@
 from django.shortcuts import render
 
-from rest_framework import viewsets
+from rest_framework import viewsets, status as http_status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -46,6 +46,18 @@ def serverDetailView(request, serverId):
     })
 
 
+def _get_user_ministry(user):
+    if user.role == 'LIDER':
+        return Ministry.objects.filter(leaderAssigned=user).first()
+    return None
+
+
+def _is_own_ministry_server(server, user):
+    my_ministry = _get_user_ministry(user)
+    if not my_ministry:
+        return user.role == 'PASTOR'
+    return server.ministries.filter(id=my_ministry.id).exists()
+
 
 class ServerViewSet(viewsets.ModelViewSet):
 
@@ -55,35 +67,75 @@ class ServerViewSet(viewsets.ModelViewSet):
 
     permission_classes = [IsAuthenticated]
 
-
     def get_queryset(self):
-        queryset = Server.objects.all()
         user = self.request.user
         ministryId = self.request.query_params.get('ministryId')
         isActive = self.request.query_params.get('isActive')
 
-        # LIDER solo ve servidores de su ministerio
         if user.role == 'LIDER':
-            from ministries.models import Ministry
             my_ministry = Ministry.objects.filter(leaderAssigned=user).first()
             if my_ministry:
-                queryset = queryset.filter(ministries=my_ministry)
+                own_servers = list(Server.objects.filter(ministries=my_ministry))
+                other_servers = list(Server.objects.exclude(ministries=my_ministry))
+                queryset = own_servers + other_servers
             else:
-                return Server.objects.none()
+                queryset = list(Server.objects.none())
+        else:
+            queryset = list(Server.objects.all())
 
         if ministryId:
-            queryset = queryset.filter(ministries=ministryId)
+            queryset = [s for s in queryset if s.ministries.filter(id=ministryId).exists()]
 
         if isActive is not None:
-            queryset = queryset.filter(isActive=isActive == 'true')
+            is_active = isActive == 'true'
+            queryset = [s for s in queryset if s.isActive == is_active]
 
         return queryset
 
+    def perform_create(self, serializer):
+        server = serializer.save()
+        user = self.request.user
+        if user.role == 'LIDER':
+            my_ministry = Ministry.objects.filter(leaderAssigned=user).first()
+            if my_ministry:
+                ServerMinistry.objects.create(server=server, ministry=my_ministry)
+
+    def perform_update(self, serializer):
+        server = self.get_object()
+        user = self.request.user
+        if user.role == 'LIDER' and not _is_own_ministry_server(server, user):
+            return Response({'error': 'No tienes permisos para modificar este servidor'}, status=http_status.HTTP_403_FORBIDDEN)
+        serializer.save()
+
+    def update(self, request, *args, **kwargs):
+        server = self.get_object()
+        user = request.user
+        if user.role == 'LIDER' and not _is_own_ministry_server(server, user):
+            return Response({'error': 'No tienes permisos para modificar este servidor'}, status=http_status.HTTP_403_FORBIDDEN)
+        return super().update(request, *args, **kwargs)
+
+    def partial_update(self, request, *args, **kwargs):
+        server = self.get_object()
+        user = request.user
+        if user.role == 'LIDER' and not _is_own_ministry_server(server, user):
+            return Response({'error': 'No tienes permisos para modificar este servidor'}, status=http_status.HTTP_403_FORBIDDEN)
+        return super().partial_update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        server = self.get_object()
+        user = request.user
+        if user.role == 'LIDER' and not _is_own_ministry_server(server, user):
+            return Response({'error': 'No tienes permisos para eliminar este servidor'}, status=http_status.HTTP_403_FORBIDDEN)
+        return super().destroy(request, *args, **kwargs)
 
     @action(detail=True, methods=['post'])
     def ministries(self, request, pk=None):
 
         server = self.get_object()
+        user = request.user
+
+        if user.role == 'LIDER' and not _is_own_ministry_server(server, user):
+            return Response({'error': 'No tienes permisos para modificar este servidor'}, status=http_status.HTTP_403_FORBIDDEN)
 
         ministryIds = request.data.get('ministryIds', [])
 
@@ -104,6 +156,10 @@ class ServerViewSet(viewsets.ModelViewSet):
     def deactivate(self, request, pk=None):
 
         server = self.get_object()
+        user = request.user
+
+        if user.role == 'LIDER' and not _is_own_ministry_server(server, user):
+            return Response({'error': 'No tienes permisos para desactivar este servidor'}, status=http_status.HTTP_403_FORBIDDEN)
 
         server.isActive = False
 
@@ -118,6 +174,10 @@ class ServerViewSet(viewsets.ModelViewSet):
     def activate(self, request, pk=None):
 
         server = self.get_object()
+        user = request.user
+
+        if user.role == 'LIDER' and not _is_own_ministry_server(server, user):
+            return Response({'error': 'No tienes permisos para activar este servidor'}, status=http_status.HTTP_403_FORBIDDEN)
 
         server.isActive = True
 
