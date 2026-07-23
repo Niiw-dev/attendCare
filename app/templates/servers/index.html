@@ -167,15 +167,15 @@
                                     <i class="ti ti-eye"></i>
                                 </a>
                                 <button @click="editServer(server)"
-                                        v-if="!user.role || !user.myMinistry || (server.ministries && server.ministries.some(m => m.id === user.myMinistry.id))"
+                                        v-if="user.role === 'PASTOR' || !user.myMinistry || (server.ministries && server.ministries.some(m => m.id === user.myMinistry.id))"
                                         class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Editar">
                                     <i class="ti ti-edit"></i>
                                 </button>
-                                <button v-if="server.isActive && (!user.role || !user.myMinistry || (server.ministries && server.ministries.some(m => m.id === user.myMinistry.id)))" @click="deactivateServer(server)"
+                                <button v-if="server.isActive && (user.role === 'PASTOR' || !user.myMinistry || (server.ministries && server.ministries.some(m => m.id === user.myMinistry.id)))" @click="deactivateServer(server)"
                                         class="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition" title="Desactivar">
                                     <i class="ti ti-user-off"></i>
                                 </button>
-                                <button v-if="!server.isActive && (!user.role || !user.myMinistry || (server.ministries && server.ministries.some(m => m.id === user.myMinistry.id)))" @click="activateServer(server)"
+                                <button v-if="!server.isActive && (user.role === 'PASTOR' || !user.myMinistry || (server.ministries && server.ministries.some(m => m.id === user.myMinistry.id)))" @click="activateServer(server)"
                                         class="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition" title="Activar">
                                     <i class="ti ti-user-check"></i>
                                 </button>
